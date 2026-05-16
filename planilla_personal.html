@@ -381,19 +381,24 @@ function loadState(){
   if(!S.feriados) S.feriados={};
   // migrar empleados de versiones anteriores
   S.empleados.forEach(e=>{
-    if(e.activo===undefined) e.activo=true;
+    // activo: siempre definido como booleano
+    if(e.activo===undefined||e.activo===null) e.activo=true;
+    // histCat: siempre presente
     if(!e.histCat||!e.histCat.length){
       const catId=e.categoriaId||0;
       const cat=S.categorias.find(c=>c.id==catId);
       e.histCat=[{catId:catId, desde:'2020-01-01', valorHora:cat?cat.valorHora:0}];
     }
+    // valorHora en histCat: siempre presente
     e.histCat.forEach(h=>{
-      if(!h.valorHora||h.valorHora===0){
+      if(h.valorHora===undefined||h.valorHora===null||h.valorHora===0){
         const cat=S.categorias.find(c=>c.id==h.catId);
         if(cat) h.valorHora=cat.valorHora;
       }
     });
   });
+  // guardar si hubo migraciones
+  save();
 }
 function save(){ localStorage.setItem('ppl5',JSON.stringify(S)); }
 
@@ -497,7 +502,7 @@ function toggleDark(){
   document.getElementById('btn-dark').textContent=isDark?'🌙 Oscuro':'☀️ Claro';
 }
 // calcular estado de un empleado en un día
-function estadoEmp(f){
+function estadoEmp(f,fecha){
   if(f.ausente) return 'ausente';
   if(f.enfermo) return 'enfermo';
   const tieneM=f.mE||f.mS, tieneT=f.tE||f.tS;
@@ -781,10 +786,12 @@ function renderAdelantos(){
 // ═══════════════════════════════════════════════════════
 function renderFichaje(){
   const a=document.getElementById('f-anio').value,m=document.getElementById('f-mes').value,q=document.getElementById('f-quincena').value;
-  // compatibilidad: si ninguno tiene activo definido, activarlos todos
-  if(S.empleados.length && !S.empleados.some(e=>e.activo)){
-    S.empleados.forEach(e=>e.activo=true); save();
-  }
+  // compatibilidad: asegurar que todos tengan activo definido
+  let migrado=false;
+  S.empleados.forEach(e=>{
+    if(e.activo===undefined||e.activo===null){e.activo=true;migrado=true;}
+  });
+  if(migrado) save();
   const empsActivos=S.empleados.filter(e=>e.activo!==false);
   if(!empsActivos.length)return alert('No hay empleados activos. Revisá el legajo de cada uno.');
   const key=periodoKey(a,m,q);
@@ -837,6 +844,7 @@ function renderFichaje(){
 }
 
 function buildFilaEmp(key,fecha,e,readonly){
+  const esFeriado=S.feriados&&S.feriados[fecha];
   const f=((S.fichajes[key]||{})[e.id]||{})[fecha]||{};
   const enfermo=f.enfermo||false, ausente=f.ausente||false;
   const h=calcH(f.mE,f.mS)+calcH(f.tE,f.tS);
@@ -844,7 +852,6 @@ function buildFilaEmp(key,fecha,e,readonly){
   const bloq=esFeriado||enfermo||ausente||readonly;
   const dis=bloq?'disabled':'';
   const op=bloq?'opacity:.25;':'';
-  const esFeriado=S.feriados&&S.feriados[fecha];
   const estado=estadoEmp(f,fecha);
   const claseRow=estado==='vacio'?'':('estado-'+estado);
   const hColor=esFeriado?'#6366f1':enfermo?'var(--rosa)':ausente?'var(--danger)':estado==='tardanza'?'var(--warn)':hTotal>0?'var(--accent2)':'var(--muted)';
@@ -973,25 +980,33 @@ function renderQuincena(){
   const a=document.getElementById('q-anio').value,m=document.getElementById('q-mes').value,q=document.getElementById('q-quincena').value;
   const key=periodoKey(a,m,q),dias=diasPeriodo(a,m,q);
   const cont=document.getElementById('quincena-container');
-  if(S.empleados.length && !S.empleados.some(e=>e.activo)){S.empleados.forEach(e=>e.activo=true);save();}
-  if(S.empleados.length && !S.empleados.some(e=>e.activo)){S.empleados.forEach(e=>e.activo=true);save();}
-  if(S.empleados.length && !S.empleados.some(e=>e.activo)){S.empleados.forEach(e=>e.activo=true);save();}
   const emps=S.empleados.filter(e=>e.activo!==false);
   if(!emps.length){cont.innerHTML='<div class="empty"><span>👥</span>Sin empleados activos.</div>';return;}
   let html=`<div style="font-weight:700;font-size:.93rem;color:var(--accent);margin-bottom:12px">${q}ª quincena — ${MESES[parseInt(m)-1]} ${a} <span style="font-size:.78rem;font-weight:400;color:var(--muted)">(${dias.length} días)</span></div>`;
   emps.forEach(e=>{
     const fichs=(S.fichajes[key]||{})[e.id]||{};let totalH=0,rows='';
     dias.forEach(({fecha,dt,d})=>{
-      const f=fichs[fecha]||{},enfermo=f.enfermo||false;
-      const hM=enfermo?0:calcH(f.mE,f.mS),hT=enfermo?0:calcH(f.tE,f.tS),hD=enfermo?S.config.hsEnf:hM+hT;
-      totalH+=hD;const vacio=!enfermo&&!f.mE&&!f.mS&&!f.tE&&!f.tS;
-      rows+=`<tr style="${vacio?'opacity:.3':''}${enfermo?'background:rgba(245,158,11,.05)':''}">
-        <td>${DSEM[dt.getDay()]} ${d}${enfermo?' <span class="badge badge-warn" style="font-size:.58rem">🏥</span>':''}</td>
-        <td class="mono">${enfermo?'—':f.mE||'—'}</td><td class="mono">${enfermo?'—':f.mS||'—'}</td>
+      const f=fichs[fecha]||{};
+      const esFer=S.feriados&&S.feriados[fecha];
+      const enfermo=f.enfermo||false, ausente=f.ausente||false;
+      const hM=esFer||enfermo?0:calcH(f.mE,f.mS);
+      const hT=esFer||enfermo?0:calcH(f.tE,f.tS);
+      const hD=esFer?S.config.hsEnf:enfermo?S.config.hsEnf:ausente?0:hM+hT;
+      totalH+=hD;
+      const vacio=!esFer&&!enfermo&&!ausente&&!f.mE&&!f.mS&&!f.tE&&!f.tS;
+      let rowColor=esFer?'background:rgba(99,102,241,.06)':enfermo?'background:rgba(244,63,122,.05)':ausente?'background:rgba(220,38,38,.05)':'';
+      let tagExtra=esFer?'<span class="badge" style="background:rgba(99,102,241,.15);color:#6366f1;font-size:.55rem">🗓️ Feriado</span>':
+        enfermo?'<span class="badge badge-warn" style="font-size:.55rem">🏥</span>':
+        ausente?'<span class="badge badge-red" style="font-size:.55rem">✕</span>':'';
+      rows+=`<tr style="${vacio?'opacity:.3':''}${rowColor}">
+        <td>${DSEM[dt.getDay()]} ${d} ${tagExtra}</td>
+        <td class="mono">${esFer||enfermo||ausente?'—':f.mE||'—'}</td>
+        <td class="mono">${esFer||enfermo||ausente?'—':f.mS||'—'}</td>
         <td class="mono">${hM>0?hM.toFixed(1)+'h':'—'}</td>
-        <td class="mono">${enfermo?'—':f.tE||'—'}</td><td class="mono">${enfermo?'—':f.tS||'—'}</td>
+        <td class="mono">${esFer||enfermo||ausente?'—':f.tE||'—'}</td>
+        <td class="mono">${esFer||enfermo||ausente?'—':f.tS||'—'}</td>
         <td class="mono">${hT>0?hT.toFixed(1)+'h':'—'}</td>
-        <td class="mono" style="font-weight:700;color:${enfermo?'var(--warn)':hD>0?'var(--accent2)':'var(--muted)'}">${hD>0?hD.toFixed(1)+'h':'—'}</td>
+        <td class="mono" style="font-weight:700;color:${esFer?'#6366f1':enfermo?'var(--rosa)':ausente?'var(--danger)':hD>0?'var(--accent2)':'var(--muted)'}">${hD>0?hD.toFixed(1)+'h':'—'}</td>
       </tr>`;
     });
     const tarifa=tarifaEmpEnPeriodo(e.id,key);
@@ -1016,9 +1031,6 @@ function renderLiquidacion(){
   const a=document.getElementById('l-anio').value,m=document.getElementById('l-mes').value,q=document.getElementById('l-quincena').value;
   const key=periodoKey(a,m,q),hsNorm=S.config.hsNorm;
   const cont=document.getElementById('liquidacion-container');
-  if(S.empleados.length && !S.empleados.some(e=>e.activo)){S.empleados.forEach(e=>e.activo=true);save();}
-  if(S.empleados.length && !S.empleados.some(e=>e.activo)){S.empleados.forEach(e=>e.activo=true);save();}
-  if(S.empleados.length && !S.empleados.some(e=>e.activo)){S.empleados.forEach(e=>e.activo=true);save();}
   const emps=S.empleados.filter(e=>e.activo!==false);
   if(!emps.length){cont.innerHTML='<div class="empty"><span>👥</span>Sin empleados activos.</div>';return;}
   if(!S.pagos[key])S.pagos[key]={};
@@ -1087,9 +1099,6 @@ function marcarPago(key,empId){
 function renderAsistencia(){
   const a=document.getElementById('a-anio').value,m=document.getElementById('a-mes').value,per=document.getElementById('a-periodo').value;
   const cont=document.getElementById('asistencia-container');
-  if(S.empleados.length && !S.empleados.some(e=>e.activo)){S.empleados.forEach(e=>e.activo=true);save();}
-  if(S.empleados.length && !S.empleados.some(e=>e.activo)){S.empleados.forEach(e=>e.activo=true);save();}
-  if(S.empleados.length && !S.empleados.some(e=>e.activo)){S.empleados.forEach(e=>e.activo=true);save();}
   const emps=S.empleados.filter(e=>e.activo!==false);
   if(!emps.length){cont.innerHTML='<div class="empty"><span>👥</span>Sin empleados.</div>';return;}
   const keys=per==='mes'?[periodoKey(a,m,1),periodoKey(a,m,2)]:[periodoKey(a,m,per)];
@@ -1249,18 +1258,14 @@ function confirmarImport(){
   if(!S.feriados) S.feriados={};
   // migrar empleados de versiones anteriores
   S.empleados.forEach(e=>{
-    // asegurar que activo siempre esté definido
-    if(e.activo===undefined) e.activo=true;
-    // migrar histCat si no existe
+    if(e.activo===undefined||e.activo===null) e.activo=true;
     if(!e.histCat||!e.histCat.length){
-      // buscar la categoría del empleado en el backup
       const catId=e.categoriaId||0;
       const cat=S.categorias.find(c=>c.id==catId);
       e.histCat=[{catId:catId, desde:'2020-01-01', valorHora:cat?cat.valorHora:0}];
     }
-    // asegurar que cada entrada de histCat tenga valorHora
     e.histCat.forEach(h=>{
-      if(!h.valorHora||h.valorHora===0){
+      if(h.valorHora===undefined||h.valorHora===null||h.valorHora===0){
         const cat=S.categorias.find(c=>c.id==h.catId);
         if(cat) h.valorHora=cat.valorHora;
       }
@@ -1305,7 +1310,7 @@ function renderPlanilla(){
       emps.forEach(e=>{
         const hc=catActualEmp(e),cat=hc?S.categorias.find(c=>c.id==hc.catId):null;
         const f=((S.fichajes[key]||{})[e.id]||{})[fecha]||{};
-        const est=estadoEmp(f),h=f.ausente?0:f.enfermo?S.config.hsEnf:calcH(f.mE,f.mS)+calcH(f.tE,f.tS);
+        const est=estadoEmp(f,fecha),h=f.ausente?0:f.enfermo?S.config.hsEnf:calcH(f.mE,f.mS)+calcH(f.tE,f.tS);
         html+=`<tr class="${estadoClase[est]||''}">
           <td style="font-weight:600">${e.nombre}</td>
           <td>${cat?cat.nombre:'?'}</td>
@@ -1327,8 +1332,9 @@ function renderPlanilla(){
       let rows='';
       dias.forEach(({fecha,dt,d})=>{
         const nomDia=DSEM[dt.getDay()],esDS=dt.getDay()===0||dt.getDay()===6;
-        const f=fichs[fecha]||{},est=estadoEmp(f);
-        const h=f.ausente?0:f.enfermo?S.config.hsEnf:calcH(f.mE,f.mS)+calcH(f.tE,f.tS);
+        const f=fichs[fecha]||{},est=estadoEmp(f,fecha);
+        const esFerP=S.feriados&&S.feriados[fecha];
+        const h=f.ausente?0:esFerP?S.config.hsEnf:f.enfermo?S.config.hsEnf:calcH(f.mE,f.mS)+calcH(f.tE,f.tS);
         if(!esDS){totalH+=h;if(est==='presente'||est==='tardanza')totalPres++;else if(est==='enfermo')totalEnf++;else if(est==='ausente')totalAus++;}
         rows+=`<tr class="${esDS?'':''+( estadoClase[est]||'')}">
           <td>${nomDia} ${d}${esDS?' (fin de semana)':''}</td>

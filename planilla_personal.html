@@ -1,0 +1,1468 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Planilla de Personal</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Sora:wght@300;400;600;700&family=JetBrains+Mono:wght@400;600&display=swap');
+:root{--bg:#f0f2f7;--surface:#ffffff;--surface2:#f7f8fc;--surface3:#edf0f7;--border:#d1d9e6;--accent:#2563eb;--accent2:#059669;--warn:#d97706;--danger:#dc2626;--text:#1e293b;--muted:#64748b;--radius:10px;--rosa:#f43f7a;}
+[data-dark]{--bg:#0f1117;--surface:#181c27;--surface2:#1e2336;--surface3:#242840;--border:#2a3050;--accent:#4f8ef7;--accent2:#34d399;--warn:#f59e0b;--danger:#f87171;--text:#e2e8f0;--muted:#64748b;--rosa:#f472b6;}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{background:var(--bg);color:var(--text);font-family:'Sora',sans-serif;min-height:100vh;padding:18px 22px;}
+h1{font-size:1.45rem;font-weight:700;color:var(--accent);letter-spacing:-.5px;margin-bottom:2px;}
+.subtitle{color:var(--muted);font-size:.8rem;margin-bottom:14px;}
+.backup-bar{display:flex;align-items:center;justify-content:space-between;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:9px 16px;margin-bottom:14px;flex-wrap:wrap;gap:8px;}
+.tabs{display:flex;gap:3px;margin-bottom:18px;border-bottom:1px solid var(--border);flex-wrap:wrap;}
+.tab-btn{background:none;border:none;color:var(--muted);font-family:'Sora',sans-serif;font-size:.83rem;font-weight:600;padding:8px 14px;cursor:pointer;border-bottom:2px solid transparent;border-radius:6px 6px 0 0;transition:all .18s;}
+.tab-btn.active{color:var(--accent);border-bottom-color:var(--accent);background:rgba(79,142,247,.07);}
+.tab-btn:hover:not(.active){color:var(--text);}
+.tab-panel{display:none;}.tab-panel.active{display:block;}
+.card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:16px;margin-bottom:12px;}
+.card-title{font-size:.71rem;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:1px;margin-bottom:12px;}
+.form-row{display:flex;gap:9px;flex-wrap:wrap;align-items:flex-end;}
+.form-group{display:flex;flex-direction:column;gap:4px;flex:1;min-width:110px;}
+label{font-size:.72rem;color:var(--muted);font-weight:600;text-transform:uppercase;letter-spacing:.5px;}
+input,select,textarea{background:var(--surface2);border:1px solid var(--border);border-radius:7px;color:var(--text);font-family:'Sora',sans-serif;font-size:.85rem;padding:7px 10px;outline:none;transition:border .18s;width:100%;}
+input:focus,select:focus,textarea:focus{border-color:var(--accent);}
+select option{background:var(--surface2);}
+textarea{resize:vertical;min-height:60px;}
+.btn{background:var(--accent);border:none;border-radius:7px;color:#fff;cursor:pointer;font-family:'Sora',sans-serif;font-size:.82rem;font-weight:600;padding:7px 15px;transition:opacity .18s,transform .1s;white-space:nowrap;display:inline-block;}
+.btn:hover{opacity:.85;transform:translateY(-1px);}
+.btn-green{background:var(--accent2);color:#0f1117;}
+.btn-warn{background:var(--warn);color:#0f1117;}
+.btn-red{background:var(--danger);color:#fff;}
+.btn-outline{background:none;border:1px solid var(--border);color:var(--text);}
+.btn-outline:hover{border-color:var(--accent);color:var(--accent);}
+.btn-sm{padding:4px 10px;font-size:.75rem;}
+.btn-xs{padding:2px 7px;font-size:.68rem;}
+.table-wrap{overflow-x:auto;}
+table{width:100%;border-collapse:collapse;font-size:.82rem;}
+th{background:var(--surface2);color:var(--muted);font-size:.68rem;font-weight:600;letter-spacing:.8px;padding:8px 11px;text-align:left;text-transform:uppercase;border-bottom:1px solid var(--border);}
+td{padding:7px 11px;border-bottom:1px solid rgba(42,48,80,.4);vertical-align:middle;}
+tr:last-child td{border-bottom:none;}
+tr:hover td{background:rgba(79,142,247,.03);}
+.badge{border-radius:20px;font-size:.68rem;font-weight:600;padding:2px 8px;display:inline-block;}
+.badge-blue{background:rgba(79,142,247,.15);color:var(--accent);}
+.badge-green{background:rgba(52,211,153,.15);color:var(--accent2);}
+.badge-warn{background:rgba(245,158,11,.15);color:var(--warn);}
+.badge-red{background:rgba(248,113,113,.15);color:var(--danger);}
+.badge-gray{background:rgba(100,116,139,.15);color:var(--muted);}
+.mono{font-family:'JetBrains Mono',monospace;}
+.empty{text-align:center;padding:28px 16px;color:var(--muted);font-size:.84rem;}
+.empty span{display:block;font-size:1.7rem;margin-bottom:7px;}
+.periodo-bar{display:flex;gap:9px;align-items:flex-end;flex-wrap:wrap;margin-bottom:14px;}
+.dias-grid{display:flex;flex-direction:column;gap:7px;}
+.dia-card{background:var(--surface2);border:1px solid var(--border);border-radius:9px;overflow:hidden;}
+.dia-header{display:flex;align-items:center;justify-content:space-between;padding:9px 14px;cursor:pointer;background:var(--surface3);border-bottom:1px solid transparent;user-select:none;transition:background .15s;}
+.dia-header:hover{background:rgba(79,142,247,.07);}
+.dia-card.open .dia-header{border-bottom-color:var(--border);}
+.dia-chevron{transition:transform .2s;color:var(--muted);font-size:.68rem;}
+.dia-card.open .dia-chevron{transform:rotate(180deg);}
+.dia-body{display:none;padding:10px 12px 14px;}
+.dia-card.open .dia-body{display:block;}
+.emp-dia-row{display:flex;flex-wrap:wrap;align-items:center;gap:8px;padding:9px 8px;border:1.5px solid var(--border);border-radius:7px;margin-bottom:5px;transition:background .2s;}
+.emp-dia-row:last-child{margin-bottom:0;}
+.emp-dia-row.estado-presente{background:#f0fdf4;border-color:#86efac;}
+.emp-dia-row.estado-ausente{background:#fef2f2;border-color:#fca5a5;}
+.emp-dia-row.estado-tardanza{background:#fffbeb;border-color:#fcd34d;}
+.emp-dia-row.estado-enfermo{background:#fdf2f8;border-color:#f9a8d4;}
+[data-dark] .emp-dia-row.estado-presente{background:rgba(52,211,153,.07);border-color:rgba(52,211,153,.3);}
+[data-dark] .emp-dia-row.estado-ausente{background:rgba(248,113,113,.07);border-color:rgba(248,113,113,.3);}
+[data-dark] .emp-dia-row.estado-tardanza{background:rgba(245,158,11,.07);border-color:rgba(245,158,11,.3);}
+[data-dark] .emp-dia-row.estado-enfermo{background:rgba(244,63,122,.07);border-color:rgba(244,63,122,.3);}
+.emp-nombre{font-size:.83rem;font-weight:600;min-width:160px;flex-shrink:0;}
+.turno-group{display:flex;align-items:center;gap:5px;flex-shrink:0;}
+.turno-lbl{font-size:.66rem;color:var(--muted);font-weight:600;text-transform:uppercase;white-space:nowrap;}
+.emp-dia-row input[type="time"]{width:118px;font-size:.8rem;padding:5px 7px;flex-shrink:0;}
+.enf-btn,.aus-btn{display:flex;align-items:center;gap:6px;border-radius:8px;padding:6px 11px;cursor:pointer;font-size:.78rem;font-weight:600;transition:background .18s,border-color .18s;user-select:none;white-space:nowrap;border:1.5px solid;}
+.enf-btn{background:rgba(244,63,122,.08);border-color:rgba(244,63,122,.3);color:var(--rosa);}
+.enf-btn:hover,.enf-btn.activo{background:rgba(244,63,122,.18);border-color:var(--rosa);}
+.aus-btn{background:rgba(220,38,38,.07);border-color:rgba(220,38,38,.3);color:var(--danger);}
+.aus-btn:hover,.aus-btn.activo{background:rgba(220,38,38,.18);border-color:var(--danger);}
+.fer-btn{display:flex;align-items:center;gap:5px;border-radius:7px;padding:5px 11px;cursor:pointer;font-size:.78rem;font-weight:600;transition:background .18s;user-select:none;white-space:nowrap;border:1.5px solid;background:rgba(99,102,241,.08);border-color:rgba(99,102,241,.3);color:#6366f1;}
+.fer-btn:hover,.fer-btn.activo{background:rgba(99,102,241,.2);border-color:#6366f1;}
+.emp-dia-row.estado-feriado{background:#f0f0ff;border-color:#a5b4fc;}
+[data-dark] .emp-dia-row.estado-feriado{background:rgba(99,102,241,.08);border-color:rgba(99,102,241,.3);}
+.enf-btn input[type="checkbox"],.aus-btn input[type="checkbox"]{width:14px;height:14px;cursor:pointer;pointer-events:none;margin:0;}
+.horas-day{font-family:'JetBrains Mono',monospace;font-size:.88rem;font-weight:700;min-width:44px;text-align:right;}
+.stats-row{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px;margin-bottom:14px;}
+.stat-card{background:var(--surface2);border:1px solid var(--border);border-radius:9px;padding:13px;}
+.stat-lbl{font-size:.68rem;color:var(--muted);margin-bottom:4px;}
+.stat-val{font-size:1.1rem;font-weight:700;font-family:'JetBrains Mono',monospace;}
+.stat-val.blue{color:var(--accent);}.stat-val.green{color:var(--accent2);}.stat-val.warn{color:var(--warn);}.stat-val.red{color:var(--danger);}
+.prog-bar-wrap{background:var(--surface3);border-radius:20px;height:7px;overflow:hidden;min-width:80px;}
+.prog-bar{height:100%;border-radius:20px;transition:width .4s;}
+.legend{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:14px;}
+.legend-item{display:flex;align-items:center;gap:5px;font-size:.72rem;color:var(--muted);}
+.legend-dot{width:9px;height:9px;border-radius:50%;display:inline-block;}
+.modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.72);z-index:1000;align-items:center;justify-content:center;}
+.modal-box{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:24px;max-width:520px;width:95%;max-height:90vh;overflow-y:auto;box-shadow:0 24px 60px rgba(0,0,0,.5);}
+.cat-pill{display:inline-flex;align-items:center;gap:6px;background:var(--surface2);border:1px solid var(--border);border-radius:20px;padding:4px 11px;margin:3px;font-size:.8rem;}
+/* LEGAJO */
+.legajo-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:10px;margin-bottom:14px;}
+.legajo-field{display:flex;flex-direction:column;gap:3px;}
+.legajo-label{font-size:.68rem;color:var(--muted);font-weight:600;text-transform:uppercase;letter-spacing:.5px;}
+.legajo-val{font-size:.86rem;}
+.hist-item{display:flex;justify-content:space-between;align-items:center;padding:7px 10px;background:var(--surface2);border-radius:7px;margin-bottom:5px;font-size:.8rem;}
+.cerrada-badge{background:rgba(52,211,153,.15);color:var(--accent2);border-radius:6px;padding:3px 9px;font-size:.68rem;font-weight:700;}
+.abierta-badge{background:rgba(245,158,11,.15);color:var(--warn);border-radius:6px;padding:3px 9px;font-size:.68rem;font-weight:700;}
+
+/* HORARIO CONFIG */
+.horario-config{display:flex;gap:8px;align-items:center;flex-wrap:wrap;padding:10px 14px;background:var(--surface2);border-radius:8px;border:1px solid var(--border);margin-bottom:12px;}
+.horario-config label{font-size:.7rem;color:var(--muted);text-transform:uppercase;font-weight:600;}
+.horario-config input[type="time"]{width:100px;font-size:.82rem;padding:4px 7px;}
+
+/* PLANILLA IMPRESIÓN */
+.print-sheet{display:block;background:white;border:1px solid var(--border);border-radius:9px;padding:16px;margin-bottom:20px;}
+@media print{
+  body > h1, body > p.subtitle, .backup-bar, .tabs, .tab-panel:not(.active){display:none!important;}
+  .no-print{display:none!important;}
+  /* Ocultar todo el contenido excepto la planilla cuando se imprime desde esa pestaña */
+  #tab-planilla .card.no-print{display:none!important;}
+  .print-sheet{display:block!important;border:none;padding:0;margin:0;}
+  .print-sheet table{width:100%;border-collapse:collapse;font-size:11px;}
+  .print-sheet th{background:#e2e8f0!important;color:#333!important;padding:6px 8px;border:1px solid #999;text-align:left;}
+  .print-sheet td{padding:5px 8px;border:1px solid #ccc;}
+  .print-sheet .p-present{background:#dcfce7;}
+  .print-sheet .p-ausente{background:#fee2e2;}
+  .print-sheet .p-enfermo{background:#fce7f3;}
+  .print-sheet .p-tardanza{background:#fef3c7;}
+  .page-break{page-break-before:always;}
+  .card,.dia-card{border:1px solid #ccc;background:white;}
+  th{background:#f0f0f0;color:#333;}
+  .tab-panel{display:block!important;}
+  .tabs,.backup-bar{display:none;}
+  .dia-body{display:block!important;}
+}
+</style>
+</head>
+<body>
+<h1>📋 Planilla de Personal</h1>
+<p class="subtitle">Legajos · Registro diario · Adelantos · Liquidación por quincena</p>
+
+<!-- BACKUP BAR -->
+<div class="backup-bar no-print">
+  <div style="display:flex;align-items:center;gap:8px">
+    <span style="font-size:.72rem;color:var(--muted);font-weight:600;text-transform:uppercase;letter-spacing:.5px">Backup</span>
+    <span id="backup-fecha" style="font-size:.7rem;color:var(--muted);font-family:'JetBrains Mono',monospace"></span>
+  </div>
+  <div style="display:flex;gap:7px;align-items:center;flex-wrap:wrap">
+    <button class="btn btn-outline btn-sm" onclick="toggleDark()" id="btn-dark">🌙 Oscuro</button>
+    <button class="btn btn-outline btn-sm" onclick="hacerBackup()">⬇️ Exportar backup</button>
+    <label class="btn btn-outline btn-sm" style="cursor:pointer;margin:0">⬆️ Importar backup<input type="file" id="input-backup" accept=".json" style="display:none" onchange="importarBackup(event)"></label>
+  </div>
+</div>
+
+<!-- MODAL GENÉRICO -->
+<div class="modal-overlay" id="modal-overlay">
+  <div class="modal-box" id="modal-box"></div>
+</div>
+
+<!-- TABS -->
+<div class="tabs no-print">
+  <button class="tab-btn active" data-tab="personal">👤 Personal</button>
+  <button class="tab-btn" data-tab="fichaje">🕐 Registro diario</button>
+  <button class="tab-btn" data-tab="adelantos">💵 Adelantos</button>
+  <button class="tab-btn" data-tab="quincena">📅 Resumen</button>
+  <button class="tab-btn" data-tab="liquidacion">💰 Liquidación</button>
+  <button class="tab-btn" data-tab="asistencia">📊 Asistencia</button>
+  <button class="tab-btn" data-tab="planilla">🖨️ Planilla diaria</button>
+</div>
+
+<!-- ═══ PERSONAL ═══ -->
+<div class="tab-panel active" id="tab-personal">
+  <div class="card">
+    <div class="card-title">Categorías y valor por hora</div>
+    <div class="form-row" style="margin-bottom:10px">
+      <div class="form-group"><label>Categoría</label><input type="text" id="cat-nombre" placeholder="Ej: Oficial"></div>
+      <div class="form-group" style="max-width:150px"><label>$ / hora</label><input type="number" id="cat-valor" placeholder="0.00" min="0" step="0.01"></div>
+      <div class="form-group" style="flex:none"><label>&nbsp;</label><button class="btn btn-green" onclick="agregarCategoria()">+ Categoría</button></div>
+    </div>
+    <div id="lista-categorias"><div class="empty"><span>📂</span>Sin categorías.</div></div>
+  </div>
+  <div class="card">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;flex-wrap:wrap;gap:8px">
+      <div class="card-title" style="margin:0">Personal</div>
+      <div style="display:flex;gap:7px;flex-wrap:wrap">
+        <button class="btn btn-outline btn-sm no-print" onclick="imprimirListado()">🖨️ Imprimir listado</button>
+        <button class="btn btn-outline btn-sm no-print" onclick="exportarExcelPersonal()">📊 Exportar Excel</button>
+        <button class="btn btn-green btn-sm" onclick="abrirModalNuevoEmp()">+ Nuevo empleado</button>
+      </div>
+    </div>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>#</th><th>Nombre</th><th>DNI</th><th>Categoría actual</th><th>Ingreso</th><th>Estado</th><th class="no-print">Acciones</th></tr></thead>
+        <tbody id="tbody-empleados"><tr><td colspan="7" class="empty"><span>👥</span>Sin personal.</td></tr></tbody>
+      </table>
+    </div>
+  </div>
+  <!-- Config -->
+  <div class="card">
+    <div class="card-title">Configuración general</div>
+    <div class="form-row" style="margin-bottom:12px">
+      <div class="form-group" style="max-width:200px"><label>Horas enfermedad (mín.)</label><input type="number" id="cfg-hs-enf" value="8" min="1" max="24" step=".5"></div>
+      <div class="form-group" style="max-width:200px"><label>Hs normales por quincena</label><input type="number" id="cfg-hs-norm" value="48" min="1" step=".5"></div>
+    </div>
+    <div style="font-size:.72rem;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px">Horario estándar (para detectar tardanzas)</div>
+    <div class="horario-config">
+      <label>🌅 Entrada mañana</label>
+      <input type="time" id="cfg-m-entrada" value="07:00">
+      <label>Salida mañana</label>
+      <input type="time" id="cfg-m-salida" value="12:00">
+      <label>🌆 Entrada tarde</label>
+      <input type="time" id="cfg-t-entrada" value="13:00">
+      <label>Salida tarde</label>
+      <input type="time" id="cfg-t-salida" value="17:00">
+    </div>
+    <div style="font-size:.72rem;color:var(--muted);margin-bottom:12px">Si el empleado llega después o sale antes del horario estándar, la fila se marca en amarillo.</div>
+    <div class="form-group" style="flex:none;max-width:140px"><label>&nbsp;</label><button class="btn btn-outline btn-sm" onclick="guardarConfig()">Guardar todo</button></div>
+  </div>
+</div>
+
+<!-- ═══ FICHAJE ═══ -->
+<div class="tab-panel" id="tab-fichaje">
+  <div class="card no-print">
+    <div class="card-title">Período</div>
+    <div class="periodo-bar">
+      <div class="form-group" style="max-width:120px"><label>Año</label><input type="number" id="f-anio" min="2020" max="2099"></div>
+      <div class="form-group" style="max-width:155px"><label>Mes</label><select id="f-mes"></select></div>
+      <div class="form-group" style="max-width:195px"><label>Quincena</label>
+        <select id="f-quincena"><option value="1">1ª quincena (1–15)</option><option value="2">2ª quincena (16–fin)</option></select>
+      </div>
+      <div class="form-group" style="flex:none"><label>&nbsp;</label><button class="btn btn-outline" onclick="renderFichaje()">Ver días</button></div>
+    </div>
+  </div>
+  <div id="fichaje-container"><div class="empty" style="margin-top:14px"><span>📅</span>Seleccioná el período para cargar horarios.</div></div>
+</div>
+
+<!-- ═══ ADELANTOS ═══ -->
+<div class="tab-panel" id="tab-adelantos">
+  <div class="card no-print">
+    <div class="card-title">Registrar adelanto</div>
+    <div class="form-row" style="margin-bottom:10px">
+      <div class="form-group"><label>Empleado</label><select id="adel-emp"><option value="">— Seleccioná —</option></select></div>
+      <div class="form-group" style="max-width:150px"><label>Fecha</label><input type="date" id="adel-fecha"></div>
+      <div class="form-group" style="max-width:150px"><label>Monto $</label><input type="number" id="adel-monto" placeholder="0" min="0" step="100"></div>
+      <div class="form-group"><label>Nota (opcional)</label><input type="text" id="adel-nota" placeholder="Ej: anticipo quincena"></div>
+      <div class="form-group" style="flex:none"><label>&nbsp;</label><button class="btn btn-warn" onclick="registrarAdelanto()">Registrar</button></div>
+    </div>
+  </div>
+  <div class="card">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;flex-wrap:wrap;gap:8px">
+      <div class="card-title" style="margin:0">Historial de adelantos</div>
+      <div style="display:flex;gap:8px;align-items:center">
+        <label style="font-size:.72rem;color:var(--muted)">Filtrar:</label>
+        <select id="adel-filtro-emp" onchange="renderAdelantos()" style="width:180px;padding:5px 8px;font-size:.8rem">
+          <option value="">Todos los empleados</option>
+        </select>
+      </div>
+    </div>
+    <div id="tabla-adelantos"><div class="empty"><span>💵</span>Sin adelantos registrados.</div></div>
+  </div>
+</div>
+
+<!-- ═══ RESUMEN QUINCENA ═══ -->
+<div class="tab-panel" id="tab-quincena">
+  <div class="card no-print">
+    <div class="card-title">Período</div>
+    <div class="periodo-bar">
+      <div class="form-group" style="max-width:120px"><label>Año</label><input type="number" id="q-anio" min="2020" max="2099"></div>
+      <div class="form-group" style="max-width:155px"><label>Mes</label><select id="q-mes"></select></div>
+      <div class="form-group" style="max-width:195px"><label>Quincena</label>
+        <select id="q-quincena"><option value="1">1ª quincena</option><option value="2">2ª quincena</option></select>
+      </div>
+      <div class="form-group" style="flex:none"><label>&nbsp;</label><button class="btn btn-outline" onclick="renderQuincena()">Ver resumen</button></div>
+    </div>
+  </div>
+  <div id="quincena-container"><div class="empty" style="margin-top:14px"><span>📊</span>Seleccioná el período.</div></div>
+</div>
+
+<!-- ═══ LIQUIDACIÓN ═══ -->
+<div class="tab-panel" id="tab-liquidacion">
+  <div class="card no-print">
+    <div class="card-title">Período a liquidar</div>
+    <div class="periodo-bar">
+      <div class="form-group" style="max-width:120px"><label>Año</label><input type="number" id="l-anio" min="2020" max="2099"></div>
+      <div class="form-group" style="max-width:155px"><label>Mes</label><select id="l-mes"></select></div>
+      <div class="form-group" style="max-width:195px"><label>Quincena</label>
+        <select id="l-quincena"><option value="1">1ª quincena</option><option value="2">2ª quincena</option></select>
+      </div>
+      <div class="form-group" style="flex:none"><label>&nbsp;</label><button class="btn btn-warn" onclick="renderLiquidacion()">Generar liquidación</button></div>
+    </div>
+  </div>
+  <div id="liquidacion-container"><div class="empty" style="margin-top:14px"><span>💳</span>Generá la liquidación.</div></div>
+  <div id="liq-actions" style="display:none;margin-top:12px;gap:9px;justify-content:flex-end" class="no-print">
+    <button class="btn btn-outline" onclick="window.print()">🖨️ Imprimir</button>
+    <button class="btn btn-green" onclick="exportarCSV()">📤 Exportar CSV</button>
+  </div>
+</div>
+
+<!-- ═══ ASISTENCIA ═══ -->
+<div class="tab-panel" id="tab-asistencia">
+  <div class="card no-print">
+    <div class="card-title">Período de análisis</div>
+    <div class="periodo-bar">
+      <div class="form-group" style="max-width:120px"><label>Año</label><input type="number" id="a-anio" min="2020" max="2099"></div>
+      <div class="form-group" style="max-width:155px"><label>Mes</label><select id="a-mes"></select></div>
+      <div class="form-group" style="max-width:220px"><label>Período</label>
+        <select id="a-periodo">
+          <option value="1">1ª quincena (1–15)</option>
+          <option value="2">2ª quincena (16–fin)</option>
+          <option value="mes">Mes completo</option>
+        </select>
+      </div>
+      <div class="form-group" style="flex:none"><label>&nbsp;</label><button class="btn btn-outline" onclick="renderAsistencia()">Ver informe</button></div>
+      <div class="form-group" style="flex:none"><label>&nbsp;</label><button class="btn btn-outline btn-sm" onclick="window.print()">🖨️</button></div>
+    </div>
+  </div>
+  <div id="asistencia-container"><div class="empty" style="margin-top:14px"><span>📊</span>Seleccioná el período.</div></div>
+</div>
+
+<!-- ═══ PLANILLA DIARIA ═══ -->
+<div class="tab-panel" id="tab-planilla">
+  <div class="card no-print">
+    <div class="card-title">Planilla de asistencia imprimible</div>
+    <div class="periodo-bar">
+      <div class="form-group" style="max-width:120px"><label>Año</label><input type="number" id="pl-anio" min="2020" max="2099"></div>
+      <div class="form-group" style="max-width:155px"><label>Mes</label><select id="pl-mes"></select></div>
+      <div class="form-group" style="max-width:195px"><label>Quincena</label>
+        <select id="pl-quincena"><option value="1">1ª quincena</option><option value="2">2ª quincena</option></select>
+      </div>
+      <div class="form-group" style="max-width:200px"><label>Formato</label>
+        <select id="pl-formato">
+          <option value="dia">Una hoja por día</option>
+          <option value="emp">Una hoja por empleado</option>
+        </select>
+      </div>
+      <div class="form-group" style="flex:none"><label>&nbsp;</label><button class="btn btn-outline" onclick="renderPlanilla()">Vista previa</button></div>
+      <div class="form-group" style="flex:none"><label>&nbsp;</label><button class="btn btn-warn" onclick="window.print()">🖨️ Imprimir</button></div>
+    </div>
+  </div>
+  <div id="planilla-container"><div class="empty" style="margin-top:14px"><span>🖨️</span>Configurá y generá la vista previa.</div></div>
+</div>
+
+<script>
+// ═══════════════════════════════════════════════════════
+// ESTADO
+// ═══════════════════════════════════════════════════════
+let S = {
+  config:    { hsEnf:8, hsNorm:48 },
+  categorias:[],
+  // empleado: { id, nombre, dni, cuil, tel, dir, fnac, ingreso, notas, activo,
+  //             histCat:[{catId, desde, valorHora}] }
+  empleados: [],
+  fichajes:  {},  // [key][empId][fecha] = {mE,mS,tE,tS,enfermo}
+  quincenasCerradas: {}, // [key] = { cerradaEn, tarifas:{empId: valorHora} }
+  adelantos: [],  // {id, empId, fecha, monto, nota}
+  pagos:     {}   // [key][empId] = { pagado }
+};
+
+function loadState(){
+  // intentar cargar versión nueva primero, si no existe intentar migrar desde versiones viejas
+  let raw = localStorage.getItem('ppl5');
+  if(!raw) raw = localStorage.getItem('ppl4');
+  if(!raw) raw = localStorage.getItem('ppl3');
+  if(!raw) raw = localStorage.getItem('ppl2');
+  try{ if(raw) S=JSON.parse(raw); }catch(e){}
+  if(!S.config) S.config={hsEnf:8,hsNorm:48};
+  if(!S.config.mEntrada) S.config.mEntrada='07:00';
+  if(!S.config.mSalida)  S.config.mSalida='12:00';
+  if(!S.config.tEntrada) S.config.tEntrada='13:00';
+  if(!S.config.tSalida)  S.config.tSalida='17:00';
+  if(!S.quincenasCerradas) S.quincenasCerradas={};
+  if(!S.adelantos) S.adelantos=[];
+  if(!S.pagos) S.pagos={};
+  if(!S.fichajes) S.fichajes={};
+  if(!S.feriados) S.feriados={};
+  // migrar empleados de versiones anteriores
+  S.empleados.forEach(e=>{
+    // activo: siempre definido como booleano
+    if(e.activo===undefined||e.activo===null) e.activo=true;
+    // histCat: siempre presente
+    if(!e.histCat||!e.histCat.length){
+      const catId=e.categoriaId||0;
+      const cat=S.categorias.find(c=>c.id==catId);
+      e.histCat=[{catId:catId, desde:'2020-01-01', valorHora:cat?cat.valorHora:0}];
+    }
+    // valorHora en histCat: siempre presente
+    e.histCat.forEach(h=>{
+      if(h.valorHora===undefined||h.valorHora===null||h.valorHora===0){
+        const cat=S.categorias.find(c=>c.id==h.catId);
+        if(cat) h.valorHora=cat.valorHora;
+      }
+    });
+  });
+  // guardar si hubo migraciones
+  save();
+}
+function save(){ localStorage.setItem('ppl5',JSON.stringify(S)); }
+
+const MESES=['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
+const DSEM=['Dom','Lun','Mar','Mié','Jue','Vie','Sáb'];
+const COLORS=['#4f8ef7','#34d399','#f59e0b','#f87171','#a78bfa','#38bdf8','#fb7185'];
+
+// ═══════════════════════════════════════════════════════
+// HELPERS
+// ═══════════════════════════════════════════════════════
+function calcH(e,s){ if(!e||!s)return 0; const[eh,em]=e.split(':').map(Number),[sh,sm]=s.split(':').map(Number),m=(sh*60+sm)-(eh*60+em); return m>0?m/60:0; }
+function periodoKey(a,m,q){ return `${a}-${String(m).padStart(2,'0')}-${q}`; }
+function diasPeriodo(a,m,q){
+  a=parseInt(a);m=parseInt(m);q=parseInt(q);
+  const ini=q===1?1:16,fin=q===1?15:new Date(a,m,0).getDate(),out=[];
+  for(let d=ini;d<=fin;d++){const dt=new Date(a,m-1,d);out.push({fecha:`${a}-${String(m).padStart(2,'0')}-${String(d).padStart(2,'0')}`,dt,d});}
+  return out;
+}
+function valorHoraActual(catId){ const c=S.categorias.find(x=>x.id==catId); return c?c.valorHora:0; }
+function catActualEmp(emp){ return emp.histCat&&emp.histCat.length?emp.histCat[emp.histCat.length-1]:null; }
+function tarifaEmpEnPeriodo(empId, key){
+  // Si la quincena está cerrada, usar tarifa congelada
+  const qc=S.quincenasCerradas[key];
+  if(qc&&qc.tarifas&&qc.tarifas[empId]!==undefined) return qc.tarifas[empId];
+  // Sino usar la tarifa actual
+  const emp=S.empleados.find(e=>e.id==empId);
+  if(!emp) return 0;
+  const hc=catActualEmp(emp);
+  return hc?hc.valorHora:0;
+}
+function horasEmp(key,empId){
+  const fs=(S.fichajes[key]||{})[empId]||{};
+  // obtener todos los días del período para chequear feriados
+  const [a,m,q]=key.split('-');
+  const dias=diasPeriodo(a,m,q);
+  return dias.reduce((t,{fecha})=>{
+    const f=(fs[fecha])||{};
+    const esFer=S.feriados&&S.feriados[fecha];
+    if(esFer) return t+S.config.hsEnf;
+    if(f.ausente) return t;
+    if(f.enfermo) return t+S.config.hsEnf;
+    return t+calcH(f.mE,f.mS)+calcH(f.tE,f.tS);
+  },0);
+}
+function diasAusenteEmp(key,empId){
+  const fs=(S.fichajes[key]||{})[empId]||{};
+  return Object.values(fs).filter(f=>f.ausente).length;
+}
+function diasEnfEmp(key,empId){
+  const fs=(S.fichajes[key]||{})[empId]||{};
+  return Object.values(fs).filter(f=>f.enfermo).length;
+}
+// adelantos de un empleado en un período (quincena)
+function adelantosEnPeriodo(empId, key){
+  const[a,m,q]=key.split('-');
+  const ini=parseInt(q)===1?`${a}-${m}-01`:`${a}-${m}-16`;
+  const fin=parseInt(q)===1?`${a}-${m}-15`:`${a}-${m}-31`;
+  return S.adelantos.filter(ad=>ad.empId==empId&&ad.fecha>=ini&&ad.fecha<=fin);
+}
+function totalAdelantosEnPeriodo(empId, key){
+  return adelantosEnPeriodo(empId,key).reduce((s,a)=>s+a.monto,0);
+}
+function fmt(n){ return Number(n).toLocaleString('es-AR',{minimumFractionDigits:2,maximumFractionDigits:2}); }
+function fmtFecha(f){ if(!f)return '—'; const[a,m,d]=f.split('-'); return `${d}/${m}/${a}`; }
+
+// ═══════════════════════════════════════════════════════
+// INIT
+// ═══════════════════════════════════════════════════════
+function initSelects(){
+  const now=new Date(); const a=now.getFullYear(),m=now.getMonth();
+  ['f','q','l','a','pl'].forEach(p=>{
+    const ea=document.getElementById(p+'-anio'),em=document.getElementById(p+'-mes');
+    if(ea)ea.value=a;
+    if(em)em.innerHTML=MESES.map((n,i)=>`<option value="${i+1}"${i===m?' selected':''}>${n}</option>`).join('');
+  });
+  // fecha de hoy para adelantos
+  const fa=document.getElementById('adel-fecha');
+  if(fa)fa.value=now.toISOString().slice(0,10);
+}
+function cargarConfig(){
+  document.getElementById('cfg-hs-enf').value=S.config.hsEnf;
+  document.getElementById('cfg-hs-norm').value=S.config.hsNorm;
+  document.getElementById('cfg-m-entrada').value=S.config.mEntrada||'07:00';
+  document.getElementById('cfg-m-salida').value=S.config.mSalida||'12:00';
+  document.getElementById('cfg-t-entrada').value=S.config.tEntrada||'13:00';
+  document.getElementById('cfg-t-salida').value=S.config.tSalida||'17:00';
+}
+function guardarConfig(){
+  S.config.hsEnf=parseFloat(document.getElementById('cfg-hs-enf').value)||8;
+  S.config.hsNorm=parseFloat(document.getElementById('cfg-hs-norm').value)||48;
+  S.config.mEntrada=document.getElementById('cfg-m-entrada').value||'07:00';
+  S.config.mSalida=document.getElementById('cfg-m-salida').value||'12:00';
+  S.config.tEntrada=document.getElementById('cfg-t-entrada').value||'13:00';
+  S.config.tSalida=document.getElementById('cfg-t-salida').value||'17:00';
+  save(); const btn=event.target,o=btn.textContent;btn.textContent='✅ Guardado';setTimeout(()=>btn.textContent=o,1400);
+}
+function toggleDark(){
+  const b=document.body;
+  const isDark=b.hasAttribute('data-dark');
+  isDark?b.removeAttribute('data-dark'):b.setAttribute('data-dark','');
+  document.getElementById('btn-dark').textContent=isDark?'🌙 Oscuro':'☀️ Claro';
+}
+// calcular estado de un empleado en un día
+function estadoEmp(f,fecha){
+  if(f.ausente) return 'ausente';
+  if(f.enfermo) return 'enfermo';
+  const tieneM=f.mE||f.mS, tieneT=f.tE||f.tS;
+  if(!tieneM&&!tieneT) return 'vacio';
+  // chequear tardanza contra horario estándar
+  const mE=S.config.mEntrada||'07:00', mS=S.config.mSalida||'12:00';
+  const tE=S.config.tEntrada||'13:00', tS=S.config.tSalida||'17:00';
+  const tarde=(tieneM&&f.mE&&f.mE>mE)||(tieneM&&f.mS&&f.mS<mS)||(tieneT&&f.tE&&f.tE>tE)||(tieneT&&f.tS&&f.tS<tS);
+  if(tarde) return 'tardanza';
+  return 'presente';
+}
+
+// TABS
+document.querySelectorAll('.tab-btn').forEach(btn=>{
+  btn.addEventListener('click',()=>{
+    document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
+    document.querySelectorAll('.tab-panel').forEach(p=>p.classList.remove('active'));
+    btn.classList.add('active');
+    document.getElementById('tab-'+btn.dataset.tab).classList.add('active');
+    if(btn.dataset.tab==='adelantos') renderAdelantos();
+  });
+});
+
+// MODAL
+function abrirModal(html){ document.getElementById('modal-box').innerHTML=html; document.getElementById('modal-overlay').style.display='flex'; }
+function cerrarModal(){ document.getElementById('modal-overlay').style.display='none'; }
+document.getElementById('modal-overlay').addEventListener('click',e=>{ if(e.target===document.getElementById('modal-overlay'))cerrarModal(); });
+
+// ═══════════════════════════════════════════════════════
+// CATEGORÍAS
+// ═══════════════════════════════════════════════════════
+function agregarCategoria(){
+  const n=document.getElementById('cat-nombre').value.trim();
+  const v=parseFloat(document.getElementById('cat-valor').value);
+  if(!n||isNaN(v)||v<0)return alert('Completá nombre y valor por hora.');
+  S.categorias.push({id:Date.now(),nombre:n,valorHora:v});
+  save();renderCats();
+  document.getElementById('cat-nombre').value='';document.getElementById('cat-valor').value='';
+}
+function editarCategoria(id){
+  const c=S.categorias.find(x=>x.id==id); if(!c)return;
+  abrirModal(`
+    <div style="font-size:1rem;font-weight:700;margin-bottom:16px">Editar categoría</div>
+    <div class="form-group" style="margin-bottom:10px"><label>Nombre</label><input id="mc-nombre" value="${c.nombre}" style="width:100%"></div>
+    <div class="form-group" style="margin-bottom:16px"><label>$ / hora</label><input id="mc-valor" type="number" value="${c.valorHora}" style="width:100%"></div>
+    <div style="background:rgba(245,158,11,.1);border:1px solid rgba(245,158,11,.3);border-radius:8px;padding:9px 13px;font-size:.78rem;color:var(--warn);margin-bottom:16px">
+      ⚠️ El nuevo valor aplica solo a quincenas futuras no cerradas. Las quincenas cerradas conservan su tarifa congelada.
+    </div>
+    <div style="display:flex;gap:9px;justify-content:flex-end">
+      <button class="btn btn-outline btn-sm" onclick="cerrarModal()">Cancelar</button>
+      <button class="btn btn-green btn-sm" onclick="guardarCategoria(${id})">Guardar</button>
+    </div>`);
+}
+function guardarCategoria(id){
+  const c=S.categorias.find(x=>x.id==id); if(!c)return;
+  const n=document.getElementById('mc-nombre').value.trim();
+  const v=parseFloat(document.getElementById('mc-valor').value);
+  if(!n||isNaN(v))return alert('Datos inválidos.');
+  c.nombre=n; c.valorHora=v;
+  // actualizar histCat de empleados que usen esta cat como actual
+  S.empleados.forEach(e=>{
+    const hc=catActualEmp(e);
+    if(hc&&hc.catId==id) hc.valorHora=v;
+  });
+  save();renderCats();cerrarModal();
+}
+function eliminarCategoria(id){
+  if(S.empleados.some(e=>catActualEmp(e)?.catId==id))return alert('No podés eliminar una categoría asignada a empleados activos.');
+  if(!confirm('¿Eliminar categoría?'))return;
+  S.categorias=S.categorias.filter(c=>c.id!==id);save();renderCats();
+}
+function renderCats(){
+  const el=document.getElementById('lista-categorias');
+  if(!S.categorias.length){el.innerHTML='<div class="empty"><span>📂</span>Sin categorías.</div>';updSelects();return;}
+  el.innerHTML=S.categorias.map((c,i)=>`
+    <span class="cat-pill">
+      <span style="width:9px;height:9px;border-radius:50%;background:${COLORS[i%COLORS.length]};display:inline-block"></span>
+      ${c.nombre} — <strong>$${fmt(c.valorHora)}/h</strong>
+      <button class="btn btn-outline btn-xs no-print" onclick="editarCategoria(${c.id})">✏️</button>
+      <button class="btn btn-xs no-print" style="background:none;border:1px solid var(--danger);color:var(--danger)" onclick="eliminarCategoria(${c.id})">✕</button>
+    </span>`).join('');
+  updSelects();
+}
+
+// ═══════════════════════════════════════════════════════
+// EMPLEADOS
+// ═══════════════════════════════════════════════════════
+function updSelects(){
+  const opts='<option value="">— Seleccioná —</option>'+S.categorias.map(c=>`<option value="${c.id}">${c.nombre} ($${fmt(c.valorHora)}/h)</option>`).join('');
+  document.getElementById('adel-emp').innerHTML='<option value="">— Seleccioná —</option>'+S.empleados.map(e=>`<option value="${e.id}">${e.nombre}</option>`).join('');
+  document.getElementById('adel-filtro-emp').innerHTML='<option value="">Todos</option>'+S.empleados.map(e=>`<option value="${e.id}">${e.nombre}</option>`).join('');
+  // selects de cat en modal (si existe)
+  const mc=document.getElementById('modal-cat-sel');
+  if(mc)mc.innerHTML=opts;
+}
+
+function abrirModalNuevoEmp(){
+  const opts=S.categorias.map(c=>`<option value="${c.id}">${c.nombre} ($${fmt(c.valorHora)}/h)</option>`).join('');
+  abrirModal(`
+    <div style="font-size:1rem;font-weight:700;margin-bottom:16px">➕ Nuevo empleado</div>
+    <div class="legajo-grid">
+      <div class="form-group"><label>Nombre *</label><input id="ne-nombre" placeholder="Apellido, Nombre"></div>
+      <div class="form-group"><label>DNI</label><input id="ne-dni" placeholder="00.000.000"></div>
+      <div class="form-group"><label>CUIL</label><input id="ne-cuil" placeholder="20-00000000-0"></div>
+      <div class="form-group"><label>Teléfono</label><input id="ne-tel" placeholder="+54 9 ..."></div>
+      <div class="form-group"><label>Fecha de ingreso</label><input type="date" id="ne-ingreso"></div>
+      <div class="form-group"><label>Fecha de nacimiento</label><input type="date" id="ne-fnac"></div>
+      <div class="form-group" style="grid-column:span 2"><label>Dirección</label><input id="ne-dir" placeholder="Calle 123, Ciudad"></div>
+    </div>
+    <div class="form-group" style="margin-bottom:10px"><label>Categoría inicial *</label><select id="ne-cat">${opts}</select></div>
+    <div class="form-group" style="margin-bottom:16px"><label>Notas</label><textarea id="ne-notas" rows="2" placeholder="Observaciones del legajo..."></textarea></div>
+    <div style="display:flex;gap:9px;justify-content:flex-end">
+      <button class="btn btn-outline btn-sm" onclick="cerrarModal()">Cancelar</button>
+      <button class="btn btn-green btn-sm" onclick="confirmarNuevoEmp()">Guardar empleado</button>
+    </div>`);
+}
+
+function confirmarNuevoEmp(){
+  const nombre=document.getElementById('ne-nombre').value.trim();
+  const catId=parseInt(document.getElementById('ne-cat').value);
+  if(!nombre||!catId)return alert('Completá nombre y categoría.');
+  const ingreso=document.getElementById('ne-ingreso').value||new Date().toISOString().slice(0,10);
+  const cat=S.categorias.find(c=>c.id==catId);
+  const emp={
+    id:Date.now(), nombre, activo:true,
+    dni:document.getElementById('ne-dni').value.trim(),
+    cuil:document.getElementById('ne-cuil').value.trim(),
+    tel:document.getElementById('ne-tel').value.trim(),
+    dir:document.getElementById('ne-dir').value.trim(),
+    fnac:document.getElementById('ne-fnac').value,
+    ingreso,
+    notas:document.getElementById('ne-notas').value.trim(),
+    histCat:[{catId, desde:ingreso, valorHora:cat?cat.valorHora:0}]
+  };
+  S.empleados.push(emp); save(); renderEmps(); updSelects(); cerrarModal();
+}
+
+function abrirLegajo(id){
+  const emp=S.empleados.find(e=>e.id==id); if(!emp)return;
+  const catActual=catActualEmp(emp);
+  const catNombre=catActual?S.categorias.find(c=>c.id==catActual.catId)?.nombre||'?':'—';
+  const histHTML=emp.histCat.map((h,i)=>{
+    const cn=S.categorias.find(c=>c.id==h.catId)?.nombre||'?';
+    const esCurrent=i===emp.histCat.length-1;
+    return `<div class="hist-item">
+      <span>${cn} — $${fmt(h.valorHora)}/h</span>
+      <span style="display:flex;align-items:center;gap:7px">
+        <span class="mono" style="font-size:.72rem;color:var(--muted)">desde ${fmtFecha(h.desde)}</span>
+        ${esCurrent?'<span class="cerrada-badge">Actual</span>':'<span class="badge-gray badge">Anterior</span>'}
+      </span>
+    </div>`;
+  }).join('');
+  const opsCat=S.categorias.map(c=>`<option value="${c.id}" ${catActual?.catId==c.id?'selected':''}>${c.nombre} ($${fmt(c.valorHora)}/h)</option>`).join('');
+  abrirModal(`
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;flex-wrap:wrap;gap:8px">
+      <div style="font-size:1rem;font-weight:700">👤 Legajo — ${emp.nombre}</div>
+      <span class="badge ${emp.activo?'badge-green':'badge-red'}">${emp.activo?'Activo':'Inactivo'}</span>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px">
+      <div class="form-group"><label>Nombre</label><input id="le-nombre" value="${emp.nombre}"></div>
+      <div class="form-group"><label>DNI</label><input id="le-dni" value="${emp.dni||''}"></div>
+      <div class="form-group"><label>CUIL</label><input id="le-cuil" value="${emp.cuil||''}"></div>
+      <div class="form-group"><label>Teléfono</label><input id="le-tel" value="${emp.tel||''}"></div>
+      <div class="form-group"><label>Fecha de ingreso</label><input type="date" id="le-ingreso" value="${emp.ingreso||''}"></div>
+      <div class="form-group"><label>Fecha de nacimiento</label><input type="date" id="le-fnac" value="${emp.fnac||''}"></div>
+      <div class="form-group" style="grid-column:span 2"><label>Dirección</label><input id="le-dir" value="${emp.dir||''}"></div>
+      <div class="form-group" style="grid-column:span 2"><label>Notas</label><textarea id="le-notas" rows="2">${emp.notas||''}</textarea></div>
+    </div>
+    <div style="background:var(--surface2);border-radius:8px;padding:12px;margin-bottom:14px">
+      <div style="font-size:.7rem;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:10px">Historial de categorías</div>
+      ${histHTML}
+      <div style="margin-top:10px;border-top:1px solid var(--border);padding-top:10px">
+        <div style="font-size:.72rem;font-weight:600;color:var(--accent);margin-bottom:7px">Cambiar categoría</div>
+        <div class="form-row">
+          <div class="form-group"><label>Nueva categoría</label><select id="le-newcat">${opsCat}</select></div>
+          <div class="form-group" style="max-width:155px"><label>Vigente desde</label><input type="date" id="le-desde" value="${new Date().toISOString().slice(0,10)}"></div>
+          <div class="form-group" style="flex:none"><label>&nbsp;</label><button class="btn btn-sm" onclick="cambiarCategoria(${id})">Aplicar</button></div>
+        </div>
+      </div>
+    </div>
+    <div style="display:flex;gap:9px;justify-content:space-between;flex-wrap:wrap">
+      <button class="btn btn-sm" style="background:none;border:1px solid var(--muted);color:var(--muted)" onclick="toggleActivo(${id})">${emp.activo?'Dar de baja':'Reactivar'}</button>
+      <div style="display:flex;gap:9px">
+        <button class="btn btn-outline btn-sm" onclick="cerrarModal()">Cancelar</button>
+        <button class="btn btn-green btn-sm" onclick="guardarLegajo(${id})">Guardar datos</button>
+      </div>
+    </div>`);
+}
+
+function guardarLegajo(id){
+  const emp=S.empleados.find(e=>e.id==id); if(!emp)return;
+  emp.nombre=document.getElementById('le-nombre').value.trim()||emp.nombre;
+  emp.dni=document.getElementById('le-dni').value.trim();
+  emp.cuil=document.getElementById('le-cuil').value.trim();
+  emp.tel=document.getElementById('le-tel').value.trim();
+  emp.ingreso=document.getElementById('le-ingreso').value;
+  emp.fnac=document.getElementById('le-fnac').value;
+  emp.dir=document.getElementById('le-dir').value.trim();
+  emp.notas=document.getElementById('le-notas').value.trim();
+  save();renderEmps();updSelects();cerrarModal();
+}
+
+function cambiarCategoria(id){
+  const emp=S.empleados.find(e=>e.id==id); if(!emp)return;
+  const newCatId=parseInt(document.getElementById('le-newcat').value);
+  const desde=document.getElementById('le-desde').value||new Date().toISOString().slice(0,10);
+  const cat=S.categorias.find(c=>c.id==newCatId); if(!cat)return;
+  const actual=catActualEmp(emp);
+  if(actual&&actual.catId===newCatId)return alert('El empleado ya tiene esa categoría.');
+  emp.histCat.push({catId:newCatId,desde,valorHora:cat.valorHora});
+  save();abrirLegajo(id);
+}
+
+function toggleActivo(id){
+  const emp=S.empleados.find(e=>e.id==id); if(!emp)return;
+  emp.activo=!emp.activo; save();renderEmps();cerrarModal();
+}
+
+function renderEmps(){
+  const tbody=document.getElementById('tbody-empleados');
+  if(!S.empleados.length){tbody.innerHTML='<tr><td colspan="7" class="empty"><span>👥</span>Sin personal.</td></tr>';return;}
+  tbody.innerHTML=S.empleados.map((e,i)=>{
+    const hc=catActualEmp(e);
+    const cat=hc?S.categorias.find(c=>c.id==hc.catId):null;
+    return `<tr style="${!e.activo?'opacity:.45':''}">
+      <td class="mono">${i+1}</td>
+      <td style="font-weight:600">${e.nombre}</td>
+      <td class="mono">${e.dni||'—'}</td>
+      <td><span class="badge badge-blue">${cat?cat.nombre:'?'}</span> <span class="mono" style="font-size:.72rem;color:var(--muted)">$${hc?fmt(hc.valorHora):'—'}/h</span></td>
+      <td class="mono" style="font-size:.78rem">${fmtFecha(e.ingreso)}</td>
+      <td><span class="badge ${e.activo?'badge-green':'badge-red'}">${e.activo?'Activo':'Baja'}</span></td>
+      <td class="no-print"><button class="btn btn-outline btn-sm" onclick="abrirLegajo(${e.id})">📄 Legajo</button></td>
+    </tr>`;
+  }).join('');
+}
+
+// ═══════════════════════════════════════════════════════
+// ADELANTOS
+// ═══════════════════════════════════════════════════════
+function registrarAdelanto(){
+  const empId=parseInt(document.getElementById('adel-emp').value);
+  const fecha=document.getElementById('adel-fecha').value;
+  const monto=parseFloat(document.getElementById('adel-monto').value);
+  const nota=document.getElementById('adel-nota').value.trim();
+  if(!empId||!fecha||isNaN(monto)||monto<=0)return alert('Completá empleado, fecha y monto.');
+  S.adelantos.push({id:Date.now(),empId,fecha,monto,nota});
+  save();renderAdelantos();
+  document.getElementById('adel-monto').value='';
+  document.getElementById('adel-nota').value='';
+}
+function eliminarAdelanto(id){
+  if(!confirm('¿Eliminar este adelanto?'))return;
+  S.adelantos=S.adelantos.filter(a=>a.id!==id);save();renderAdelantos();
+}
+function renderAdelantos(){
+  const filtroEmpId=document.getElementById('adel-filtro-emp')?.value;
+  const cont=document.getElementById('tabla-adelantos');
+  let lista=[...S.adelantos].sort((a,b)=>b.fecha.localeCompare(a.fecha));
+  if(filtroEmpId) lista=lista.filter(a=>a.empId==filtroEmpId);
+  if(!lista.length){cont.innerHTML='<div class="empty"><span>💵</span>Sin adelantos.</div>';return;}
+  const totalFiltrado=lista.reduce((s,a)=>s+a.monto,0);
+  cont.innerHTML=`
+    <div style="text-align:right;font-family:'JetBrains Mono',monospace;font-size:.9rem;font-weight:700;color:var(--warn);margin-bottom:10px">Total: $${fmt(totalFiltrado)}</div>
+    <div class="table-wrap"><table>
+      <thead><tr><th>Fecha</th><th>Empleado</th><th>Monto</th><th>Nota</th><th class="no-print">Acción</th></tr></thead>
+      <tbody>${lista.map(a=>{
+        const emp=S.empleados.find(e=>e.id==a.empId);
+        return `<tr>
+          <td class="mono">${fmtFecha(a.fecha)}</td>
+          <td>${emp?emp.nombre:'?'}</td>
+          <td class="mono" style="color:var(--warn);font-weight:600">$${fmt(a.monto)}</td>
+          <td style="color:var(--muted);font-size:.78rem">${a.nota||'—'}</td>
+          <td class="no-print"><button class="btn btn-sm" style="background:none;border:1px solid var(--danger);color:var(--danger)" onclick="eliminarAdelanto(${a.id})">Eliminar</button></td>
+        </tr>`;
+      }).join('')}</tbody>
+    </table></div>`;
+}
+
+// ═══════════════════════════════════════════════════════
+// FICHAJE
+// ═══════════════════════════════════════════════════════
+function renderFichaje(){
+  const a=document.getElementById('f-anio').value,m=document.getElementById('f-mes').value,q=document.getElementById('f-quincena').value;
+  // compatibilidad: asegurar que todos tengan activo definido
+  let migrado=false;
+  S.empleados.forEach(e=>{
+    if(e.activo===undefined||e.activo===null){e.activo=true;migrado=true;}
+  });
+  if(migrado) save();
+  const empsActivos=S.empleados.filter(e=>e.activo!==false);
+  if(!empsActivos.length)return alert('No hay empleados activos. Revisá el legajo de cada uno.');
+  const key=periodoKey(a,m,q);
+  const dias=diasPeriodo(a,m,q);
+  if(!S.fichajes[key])S.fichajes[key]={};
+  const cerrada=S.quincenasCerradas[key];
+  const cont=document.getElementById('fichaje-container');
+  cont.innerHTML=`
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;flex-wrap:wrap;gap:7px">
+      <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+        <span style="font-weight:700;font-size:.93rem;color:var(--accent)">${q}ª quincena — ${MESES[parseInt(m)-1]} ${a}</span>
+        ${cerrada?`<span class="cerrada-badge">✓ Cerrada ${fmtFecha(cerrada.cerradaEn?.slice(0,10))}</span>`:'<span class="abierta-badge">Abierta</span>'}
+      </div>
+      <div style="display:flex;gap:7px">
+        ${cerrada?'':`<button class="btn btn-green btn-sm no-print" onclick="guardarFichaje('${key}')">💾 Guardar</button>`}
+        ${cerrada?'':`<button class="btn btn-warn btn-sm no-print" onclick="cerrarQuincena('${key}')">🔒 Cerrar quincena</button>`}
+      </div>
+    </div>
+    ${cerrada?`<div style="background:rgba(52,211,153,.08);border:1px solid rgba(52,211,153,.25);border-radius:8px;padding:9px 14px;font-size:.8rem;color:var(--accent2);margin-bottom:12px">
+      ✓ Esta quincena está cerrada. Las tarifas congeladas son: ${Object.entries(cerrada.tarifas||{}).map(([eid,vh])=>{const e=S.empleados.find(x=>x.id==eid);return e?`${e.nombre}: $${fmt(vh)}/h`:''}).filter(Boolean).join(' · ')}
+    </div>`:''}
+    <div class="dias-grid" id="dias-grid"></div>`;
+  const grid=document.getElementById('dias-grid');
+  dias.forEach(({fecha,dt,d})=>{
+    const nomDia=DSEM[dt.getDay()],esDS=dt.getDay()===0||dt.getDay()===6;
+    let hDia=empsActivos.reduce((acc,e)=>{const f=((S.fichajes[key][e.id]||{})[fecha])||{};return acc+(f.enfermo?S.config.hsEnf:calcH(f.mE,f.mS)+calcH(f.tE,f.tS));},0);
+    const div=document.createElement('div');div.className='dia-card';div.id='dcard_'+fecha;
+    div.innerHTML=`
+      <div class="dia-header" onclick="toggleDia('${fecha}')">
+        <div style="display:flex;align-items:center;gap:9px">
+          <span style="font-weight:700;font-size:.88rem">${nomDia} ${d}</span>
+          ${esDS?'<span class="badge badge-warn" style="font-size:.6rem">Fin de semana</span>':''}
+        </div>
+        <div style="display:flex;align-items:center;gap:11px">
+          <span style="font-family:\'JetBrains Mono\',monospace;font-size:.76rem;color:var(--muted)" id="resdh_${fecha}">${hDia>0?hDia.toFixed(1)+'h registradas':'Sin horarios'}</span>
+          <span class="dia-chevron">▼</span>
+        </div>
+      </div>
+      <div class="dia-body" id="dbody_${fecha}">
+        <div style="display:flex;justify-content:flex-end;margin-bottom:8px" class="no-print">
+          <label class="fer-btn ${(S.feriados&&S.feriados[fecha])?'activo':''}" id="ferbtn_${fecha}" onclick="toggleFeriado('${key}','${fecha}')">
+            <input type="checkbox" ${(S.feriados&&S.feriados[fecha])?'checked':''} style="pointer-events:none;width:13px;height:13px;accent-color:#6366f1">
+            🗓️ ${(S.feriados&&S.feriados[fecha])?'Feriado — quitar':'Marcar como feriado'}
+          </label>
+        </div>
+        <div id="filas_${fecha}">${empsActivos.map(e=>buildFilaEmp(key,fecha,e,!!cerrada)).join('')}</div>
+      </div>`;
+    grid.appendChild(div);
+  });
+}
+
+function buildFilaEmp(key,fecha,e,readonly){
+  const esFeriado=S.feriados&&S.feriados[fecha];
+  const f=((S.fichajes[key]||{})[e.id]||{})[fecha]||{};
+  const enfermo=f.enfermo||false, ausente=f.ausente||false;
+  const h=calcH(f.mE,f.mS)+calcH(f.tE,f.tS);
+  const hTotal=esFeriado?S.config.hsEnf:enfermo?S.config.hsEnf:h;
+  const bloq=esFeriado||enfermo||ausente||readonly;
+  const dis=bloq?'disabled':'';
+  const op=bloq?'opacity:.25;':'';
+  const estado=estadoEmp(f,fecha);
+  const claseRow=estado==='vacio'?'':('estado-'+estado);
+  const hColor=esFeriado?'#6366f1':enfermo?'var(--rosa)':ausente?'var(--danger)':estado==='tardanza'?'var(--warn)':hTotal>0?'var(--accent2)':'var(--muted)';
+  let infoTag='';
+  if(esFeriado) infoTag=`<small style="color:#6366f1;font-size:.62rem">🗓️ Feriado — ${S.config.hsEnf}h</small>`;
+  else if(enfermo) infoTag=`<small style="color:var(--rosa);font-size:.62rem">🏥 Enfermedad — ${S.config.hsEnf}h</small>`;
+  else if(ausente) infoTag=`<small style="color:var(--danger);font-size:.62rem">✕ Ausente</small>`;
+  else if(estado==='tardanza') infoTag=`<small style="color:var(--warn);font-size:.62rem">⚠️ Fuera de horario</small>`;
+  return `<div class="emp-dia-row ${claseRow}" id="edr_${e.id}_${fecha}">
+    <div class="emp-nombre">${e.nombre}${infoTag?'<br>'+infoTag:''}</div>
+    <div class="turno-group">
+      <span class="turno-lbl">🌅 Entrada</span>
+      <input type="time" id="mE_${e.id}_${fecha}" value="${f.mE||''}" onchange="onTime('${key}','${fecha}',${e.id})" ${dis} style="${op}">
+      <span class="turno-lbl">Salida</span>
+      <input type="time" id="mS_${e.id}_${fecha}" value="${f.mS||''}" onchange="onTime('${key}','${fecha}',${e.id})" ${dis} style="${op}">
+    </div>
+    <div class="turno-group">
+      <span class="turno-lbl">🌆 Entrada</span>
+      <input type="time" id="tE_${e.id}_${fecha}" value="${f.tE||''}" onchange="onTime('${key}','${fecha}',${e.id})" ${dis} style="${op}">
+      <span class="turno-lbl">Salida</span>
+      <input type="time" id="tS_${e.id}_${fecha}" value="${f.tS||''}" onchange="onTime('${key}','${fecha}',${e.id})" ${dis} style="${op}">
+    </div>
+    ${(readonly||esFeriado)?`<span style="font-size:.72rem;color:${esFeriado?'#6366f1':'var(--muted)'}">🔒${esFeriado?' Feriado':''}</span>`:`<div style="display:flex;gap:5px;flex-wrap:wrap">
+      <label class="aus-btn${ausente?' activo':''}" onclick="onAusente('${key}','${fecha}',${e.id})">
+        <input type="checkbox" ${ausente?'checked':''} style="pointer-events:none;width:14px;height:14px;accent-color:var(--danger)">
+        ✕ ${ausente?'Ausente — quitar':'Ausente'}
+      </label>
+      <label class="enf-btn${enfermo?' activo':''}" onclick="onEnfermedad('${key}','${fecha}',${e.id})">
+        <input type="checkbox" ${enfermo?'checked':''} style="pointer-events:none;width:14px;height:14px;accent-color:var(--rosa)">
+        🏥 ${enfermo?'Enfermo — quitar':'Enfermedad'}
+      </label>
+    </div>`}
+    <div class="horas-day" style="color:${hColor}">
+      ${ausente?'—':hTotal>0?hTotal.toFixed(1)+'h':'—'}
+      ${esFeriado?'<small style="font-size:.6rem;color:#6366f1;display:block">feriado</small>':''}
+    </div>
+  </div>`;
+}
+
+function toggleDia(fecha){document.getElementById('dcard_'+fecha).classList.toggle('open');}
+
+function onTime(key,fecha,empId){
+  if(!S.fichajes[key])S.fichajes[key]={};
+  if(!S.fichajes[key][empId])S.fichajes[key][empId]={};
+  const prev=S.fichajes[key][empId][fecha]||{};
+  S.fichajes[key][empId][fecha]={mE:document.getElementById(`mE_${empId}_${fecha}`)?.value||'',mS:document.getElementById(`mS_${empId}_${fecha}`)?.value||'',tE:document.getElementById(`tE_${empId}_${fecha}`)?.value||'',tS:document.getElementById(`tS_${empId}_${fecha}`)?.value||'',enfermo:prev.enfermo||false,ausente:prev.ausente||false};
+  // re-render la fila para actualizar colores de estado
+  const e=S.empleados.find(x=>x.id==empId);
+  if(e){const old=document.getElementById(`edr_${empId}_${fecha}`);if(old)old.outerHTML=buildFilaEmp(key,fecha,e,false);}
+  refreshDiaBadge(key,fecha);
+}
+function onAusente(key,fecha,empId){
+  if(!S.fichajes[key])S.fichajes[key]={};
+  if(!S.fichajes[key][empId])S.fichajes[key][empId]={};
+  const prev=S.fichajes[key][empId][fecha]||{};
+  prev.ausente=!prev.ausente;
+  if(prev.ausente){prev.enfermo=false;prev.mE='';prev.mS='';prev.tE='';prev.tS='';}
+  S.fichajes[key][empId][fecha]=prev;
+  const e=S.empleados.find(x=>x.id==empId);
+  if(e){const old=document.getElementById(`edr_${empId}_${fecha}`);if(old)old.outerHTML=buildFilaEmp(key,fecha,e,false);}
+  refreshDiaBadge(key,fecha);
+}
+function onEnfermedad(key,fecha,empId){
+  if(!S.fichajes[key])S.fichajes[key]={};
+  if(!S.fichajes[key][empId])S.fichajes[key][empId]={};
+  const prev=S.fichajes[key][empId][fecha]||{};
+  prev.enfermo=!prev.enfermo;
+  if(prev.enfermo){prev.ausente=false;prev.mE='';prev.mS='';prev.tE='';prev.tS='';}
+  S.fichajes[key][empId][fecha]=prev;
+  const e=S.empleados.find(x=>x.id==empId);
+  if(e){const old=document.getElementById(`edr_${empId}_${fecha}`);if(old)old.outerHTML=buildFilaEmp(key,fecha,e,false);}
+  refreshDiaBadge(key,fecha);
+}
+function refreshDiaBadge(key,fecha){
+  let h=0,pres=0,aus=0,enf=0;
+  S.empleados.filter(e=>e.activo).forEach(e=>{
+    const f=((S.fichajes[key]||{})[e.id]||{})[fecha]||{};
+    if(f.ausente){aus++;}
+    else if(f.enfermo){enf++;h+=S.config.hsEnf;}
+    else{const hh=calcH(f.mE,f.mS)+calcH(f.tE,f.tS);if(hh>0){pres++;h+=hh;}}
+  });
+  const el=document.getElementById('resdh_'+fecha);
+  if(el){
+    let txt=[];
+    if(pres>0)txt.push(`✓ ${pres}`);
+    if(enf>0)txt.push(`🏥 ${enf}`);
+    if(aus>0)txt.push(`✕ ${aus}`);
+    el.textContent=txt.length?txt.join(' · '):'Sin registros';
+  }
+}
+function toggleFeriado(key,fecha){
+  if(!S.feriados) S.feriados={};
+  S.feriados[fecha]=!S.feriados[fecha];
+  if(!S.feriados[fecha]) delete S.feriados[fecha];
+  // re-renderizar todas las filas del día
+  const empsActivos=S.empleados.filter(e=>e.activo!==false);
+  const filasEl=document.getElementById('filas_'+fecha);
+  const cerrada=!!S.quincenasCerradas[key];
+  if(filasEl) filasEl.innerHTML=empsActivos.map(e=>buildFilaEmp(key,fecha,e,cerrada)).join('');
+  // actualizar botón
+  const esFer=!!(S.feriados&&S.feriados[fecha]);
+  const ferBtn=document.getElementById('ferbtn_'+fecha);
+  if(ferBtn){
+    ferBtn.className='fer-btn'+(esFer?' activo':'');
+    ferBtn.querySelector('input').checked=esFer;
+    ferBtn.childNodes[ferBtn.childNodes.length-1].textContent=' '+(esFer?'Feriado — quitar':'Marcar como feriado');
+  }
+  refreshDiaBadge(key,fecha);
+  save();
+}
+function guardarFichaje(key){
+  save();const btn=event?.target;if(btn){const o=btn.textContent;btn.textContent='✅ Guardado';setTimeout(()=>btn.textContent=o,1500);}
+}
+function cerrarQuincena(key){
+  if(!confirm('¿Cerrar esta quincena? Se congelarán las tarifas actuales de cada empleado. No podrás editar los horarios.'))return;
+  const tarifas={};
+  S.empleados.filter(e=>e.activo).forEach(e=>{const hc=catActualEmp(e);tarifas[e.id]=hc?hc.valorHora:0;});
+  S.quincenasCerradas[key]={cerradaEn:new Date().toISOString(),tarifas};
+  save();renderFichaje();
+}
+
+// ═══════════════════════════════════════════════════════
+// RESUMEN QUINCENA
+// ═══════════════════════════════════════════════════════
+function renderQuincena(){
+  const a=document.getElementById('q-anio').value,m=document.getElementById('q-mes').value,q=document.getElementById('q-quincena').value;
+  const key=periodoKey(a,m,q),dias=diasPeriodo(a,m,q);
+  const cont=document.getElementById('quincena-container');
+  const emps=S.empleados.filter(e=>e.activo!==false);
+  if(!emps.length){cont.innerHTML='<div class="empty"><span>👥</span>Sin empleados activos.</div>';return;}
+  let html=`<div style="font-weight:700;font-size:.93rem;color:var(--accent);margin-bottom:12px">${q}ª quincena — ${MESES[parseInt(m)-1]} ${a} <span style="font-size:.78rem;font-weight:400;color:var(--muted)">(${dias.length} días)</span></div>`;
+  emps.forEach(e=>{
+    const fichs=(S.fichajes[key]||{})[e.id]||{};let totalH=0,rows='';
+    dias.forEach(({fecha,dt,d})=>{
+      const f=fichs[fecha]||{};
+      const esFer=S.feriados&&S.feriados[fecha];
+      const enfermo=f.enfermo||false, ausente=f.ausente||false;
+      const hM=esFer||enfermo?0:calcH(f.mE,f.mS);
+      const hT=esFer||enfermo?0:calcH(f.tE,f.tS);
+      const hD=esFer?S.config.hsEnf:enfermo?S.config.hsEnf:ausente?0:hM+hT;
+      totalH+=hD;
+      const vacio=!esFer&&!enfermo&&!ausente&&!f.mE&&!f.mS&&!f.tE&&!f.tS;
+      let rowColor=esFer?'background:rgba(99,102,241,.06)':enfermo?'background:rgba(244,63,122,.05)':ausente?'background:rgba(220,38,38,.05)':'';
+      let tagExtra=esFer?'<span class="badge" style="background:rgba(99,102,241,.15);color:#6366f1;font-size:.55rem">🗓️ Feriado</span>':
+        enfermo?'<span class="badge badge-warn" style="font-size:.55rem">🏥</span>':
+        ausente?'<span class="badge badge-red" style="font-size:.55rem">✕</span>':'';
+      rows+=`<tr style="${vacio?'opacity:.3':''}${rowColor}">
+        <td>${DSEM[dt.getDay()]} ${d} ${tagExtra}</td>
+        <td class="mono">${esFer||enfermo||ausente?'—':f.mE||'—'}</td>
+        <td class="mono">${esFer||enfermo||ausente?'—':f.mS||'—'}</td>
+        <td class="mono">${hM>0?hM.toFixed(1)+'h':'—'}</td>
+        <td class="mono">${esFer||enfermo||ausente?'—':f.tE||'—'}</td>
+        <td class="mono">${esFer||enfermo||ausente?'—':f.tS||'—'}</td>
+        <td class="mono">${hT>0?hT.toFixed(1)+'h':'—'}</td>
+        <td class="mono" style="font-weight:700;color:${esFer?'#6366f1':enfermo?'var(--rosa)':ausente?'var(--danger)':hD>0?'var(--accent2)':'var(--muted)'}">${hD>0?hD.toFixed(1)+'h':'—'}</td>
+      </tr>`;
+    });
+    const tarifa=tarifaEmpEnPeriodo(e.id,key);
+    html+=`<div class="card" style="margin-bottom:9px">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;flex-wrap:wrap;gap:6px">
+        <div><div style="font-weight:700">${e.nombre}</div><div style="font-size:.72rem;color:var(--muted)">Tarifa: $${fmt(tarifa)}/h</div></div>
+        <div style="font-family:'JetBrains Mono',monospace;font-size:1rem;font-weight:700;color:var(--accent2)">${totalH.toFixed(1)}h</div>
+      </div>
+      <div class="table-wrap"><table>
+        <thead><tr><th>Día</th><th>Ent. M.</th><th>Sal. M.</th><th>Hs M.</th><th>Ent. T.</th><th>Sal. T.</th><th>Hs T.</th><th>Total</th></tr></thead>
+        <tbody>${rows}</tbody>
+      </table></div>
+    </div>`;
+  });
+  cont.innerHTML=html;
+}
+
+// ═══════════════════════════════════════════════════════
+// LIQUIDACIÓN
+// ═══════════════════════════════════════════════════════
+function renderLiquidacion(){
+  const a=document.getElementById('l-anio').value,m=document.getElementById('l-mes').value,q=document.getElementById('l-quincena').value;
+  const key=periodoKey(a,m,q),hsNorm=S.config.hsNorm;
+  const cont=document.getElementById('liquidacion-container');
+  const emps=S.empleados.filter(e=>e.activo!==false);
+  if(!emps.length){cont.innerHTML='<div class="empty"><span>👥</span>Sin empleados activos.</div>';return;}
+  if(!S.pagos[key])S.pagos[key]={};
+  const cerrada=S.quincenasCerradas[key];
+
+  const data=emps.map(e=>{
+    const vh=tarifaEmpEnPeriodo(e.id,key);
+    const total=horasEmp(key,e.id),hN=Math.min(total,hsNorm),hX=Math.max(0,total-hsNorm);
+    const bruto=hN*vh+hX*vh*1.5;
+    const adelTotal=totalAdelantosEnPeriodo(e.id,key);
+    const adelDetalle=adelantosEnPeriodo(e.id,key);
+    const pag=S.pagos[key][e.id]||{pagado:false};
+    const neto=Math.max(0,bruto-adelTotal);
+    const enf=diasEnfEmp(key,e.id);
+    return{e,vh,total,hN,hX,bruto,adelTotal,adelDetalle,pag,neto,enf};
+  });
+
+  let tB=0,tA=0,tN=0;data.forEach(d=>{tB+=d.bruto;tA+=d.adelTotal;tN+=d.neto;});
+
+  let html=`
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;flex-wrap:wrap;gap:8px">
+      <div style="font-weight:700;font-size:.93rem;color:var(--accent)">${q}ª quincena ${MESES[parseInt(m)-1]} ${a} <span style="font-size:.72rem;font-weight:400;color:var(--muted)">· extras ×1.5 desde ${hsNorm}h</span></div>
+      ${cerrada?'<span class="cerrada-badge">🔒 Quincena cerrada</span>':'<span class="abierta-badge">⚠️ Quincena abierta</span>'}
+    </div>
+    <div class="stats-row">
+      <div class="stat-card"><div class="stat-lbl">Total bruto</div><div class="stat-val blue">$${fmt(tB)}</div></div>
+      <div class="stat-card"><div class="stat-lbl">Total adelantos</div><div class="stat-val warn">$${fmt(tA)}</div></div>
+      <div class="stat-card"><div class="stat-lbl">Total a pagar</div><div class="stat-val green">$${fmt(tN)}</div></div>
+    </div>
+    <div class="table-wrap"><table>
+      <thead><tr><th>Empleado</th><th>Tarifa</th><th>Hs tot.</th><th>Hs norm.</th><th>Hs extra</th><th>Bruto</th><th>Adelantos</th><th>A pagar</th><th>Estado</th><th class="no-print">Acción</th></tr></thead>
+      <tbody>`;
+
+  data.forEach(({e,vh,total,hN,hX,bruto,adelTotal,adelDetalle,pag,neto,enf})=>{
+    const adelTooltip=adelDetalle.map(a=>`${fmtFecha(a.fecha)}: $${fmt(a.monto)}${a.nota?' ('+a.nota+')':''}`).join(' | ');
+    html+=`<tr id="lr_${e.id}">
+      <td style="font-weight:600">${e.nombre}${enf>0?` <span class="badge badge-warn" style="font-size:.6rem">🏥${enf}d</span>`:''}</td>
+      <td class="mono">$${fmt(vh)}/h</td>
+      <td class="mono">${total.toFixed(1)}h</td>
+      <td class="mono">${hN.toFixed(1)}h</td>
+      <td class="mono">${hX>0?hX.toFixed(1)+'h <small style="color:var(--muted)">×1.5</small>':'—'}</td>
+      <td class="mono">$${fmt(bruto)}</td>
+      <td class="mono" style="color:var(--warn);cursor:${adelDetalle.length?'help':'default'}" title="${adelTooltip}">
+        ${adelTotal>0?'$'+fmt(adelTotal)+'<br><small style="color:var(--muted);font-size:.65rem">'+adelDetalle.length+' mov.</small>':'—'}
+      </td>
+      <td class="mono" style="font-weight:700;color:var(--accent2)">$${fmt(neto)}</td>
+      <td id="est_${e.id}">${pag.pagado?'<span class="badge badge-green">✓ Pagado</span>':'<span class="badge badge-warn">Pendiente</span>'}</td>
+      <td class="no-print"><button class="btn btn-sm ${pag.pagado?'btn-outline':'btn-green'}" onclick="marcarPago('${key}',${e.id})">${pag.pagado?'↩ Revertir':'✓ Pagar'}</button></td>
+    </tr>`;
+  });
+
+  html+=`</tbody></table></div>`;
+  cont.innerHTML=html;cont.dataset.key=key;
+  document.getElementById('liq-actions').style.display='flex';
+}
+
+function marcarPago(key,empId){
+  if(!S.pagos[key])S.pagos[key]={};
+  const p=S.pagos[key][empId]||{pagado:false};
+  p.pagado=!p.pagado;S.pagos[key][empId]=p;save();renderLiquidacion();
+}
+
+// ═══════════════════════════════════════════════════════
+// ASISTENCIA
+// ═══════════════════════════════════════════════════════
+function renderAsistencia(){
+  const a=document.getElementById('a-anio').value,m=document.getElementById('a-mes').value,per=document.getElementById('a-periodo').value;
+  const cont=document.getElementById('asistencia-container');
+  const emps=S.empleados.filter(e=>e.activo!==false);
+  if(!emps.length){cont.innerHTML='<div class="empty"><span>👥</span>Sin empleados.</div>';return;}
+  const keys=per==='mes'?[periodoKey(a,m,1),periodoKey(a,m,2)]:[periodoKey(a,m,per)];
+  let diasTotales=[];keys.forEach(k=>{const q=k.split('-')[2];diasTotales=diasTotales.concat(diasPeriodo(a,m,q));});
+  const diasHab=diasTotales.filter(d=>d.dt.getDay()!==0&&d.dt.getDay()!==6).length;
+  const nombrePer=per==='mes'?`${MESES[parseInt(m)-1]} ${a} — mes completo`:`${per}ª quincena — ${MESES[parseInt(m)-1]} ${a}`;
+  const empStats=emps.map(e=>{
+    let pres=0,enf=0,aus=0,horas=0;
+    diasTotales.forEach(({fecha,dt})=>{
+      if(dt.getDay()===0||dt.getDay()===6)return;
+      const esFer=S.feriados&&S.feriados[fecha];
+      const f=keys.reduce((acc,k)=>acc||((S.fichajes[k]||{})[e.id]||{})[fecha],null)||{};
+      const tieneH=calcH(f.mE,f.mS)+calcH(f.tE,f.tS)>0;
+      if(esFer){pres++;horas+=S.config.hsEnf;}
+      else if(f.enfermo){enf++;horas+=S.config.hsEnf;}
+      else if(tieneH){pres++;horas+=calcH(f.mE,f.mS)+calcH(f.tE,f.tS);}
+      else aus++;
+    });
+    const pct=diasHab>0?Math.round(((pres+enf)/diasHab)*100):0;
+    return{e,pres,enf,aus,horas,pct};
+  });
+  const totP=empStats.reduce((s,x)=>s+x.pres,0),totE=empStats.reduce((s,x)=>s+x.enf,0),totA=empStats.reduce((s,x)=>s+x.aus,0);
+  const avgPct=empStats.length?Math.round(empStats.reduce((s,x)=>s+x.pct,0)/empStats.length):0;
+  let html=`<div style="font-weight:700;font-size:.93rem;color:var(--accent);margin-bottom:12px">${nombrePer}</div>
+  <div class="stats-row">
+    <div class="stat-card"><div class="stat-lbl">Días hábiles</div><div class="stat-val blue">${diasHab}</div></div>
+    <div class="stat-card"><div class="stat-lbl">Promedio asistencia</div><div class="stat-val ${avgPct>=80?'green':avgPct>=60?'warn':'red'}">${avgPct}%</div></div>
+    <div class="stat-card"><div class="stat-lbl">Días presentes</div><div class="stat-val green">${totP}</div></div>
+    <div class="stat-card"><div class="stat-lbl">Días enfermedad</div><div class="stat-val warn">${totE}</div></div>
+    <div class="stat-card"><div class="stat-lbl">Ausencias</div><div class="stat-val red">${totA}</div></div>
+  </div>
+  <div class="legend">
+    <span class="legend-item"><span class="legend-dot" style="background:var(--accent2)"></span>Presente</span>
+    <span class="legend-item"><span class="legend-dot" style="background:var(--warn)"></span>Enfermedad</span>
+    <span class="legend-item"><span class="legend-dot" style="background:var(--danger)"></span>Ausente</span>
+    <span class="legend-item"><span class="legend-dot" style="background:var(--surface3)"></span>Fin de semana</span>
+  </div>
+  <div class="card"><div class="card-title">Detalle por empleado</div>
+  <div class="table-wrap"><table>
+    <thead><tr><th>Empleado</th><th>Categoría</th><th>Presentes</th><th>Enfermedad</th><th>Ausencias</th><th>% Asistencia</th><th>Hs totales</th></tr></thead>
+    <tbody>`;
+  empStats.forEach(({e,pres,enf,aus,horas,pct})=>{
+    const hc=catActualEmp(e),cat=hc?S.categorias.find(c=>c.id==hc.catId):null;
+    const col=pct>=80?'var(--accent2)':pct>=60?'var(--warn)':'var(--danger)';
+    html+=`<tr>
+      <td style="font-weight:600">${e.nombre}</td>
+      <td><span class="badge badge-blue">${cat?cat.nombre:'?'}</span></td>
+      <td class="mono" style="color:var(--accent2)">${pres}</td>
+      <td class="mono" style="color:var(--warn)">${enf}${enf>0?' 🏥':''}</td>
+      <td class="mono" style="color:var(--danger)">${aus}</td>
+      <td>
+        <div style="display:flex;align-items:center;gap:8px">
+          <div style="flex:1;min-width:70px"><div class="prog-bar-wrap"><div class="prog-bar" style="width:${pct}%;background:${col}"></div></div></div>
+          <span class="mono" style="font-weight:700;color:${col};min-width:34px">${pct}%</span>
+        </div>
+      </td>
+      <td class="mono">${horas.toFixed(1)}h</td>
+    </tr>`;
+  });
+  html+=`</tbody></table></div></div>`;
+  html+=`<div style="font-weight:600;font-size:.78rem;color:var(--muted);margin:14px 0 9px;text-transform:uppercase;letter-spacing:.8px">Calendario</div>`;
+  empStats.forEach(({e})=>{
+    const hc=catActualEmp(e),cat=hc?S.categorias.find(c=>c.id==hc.catId):null;
+    html+=`<div class="card" style="margin-bottom:9px">
+      <div style="font-weight:700;margin-bottom:9px">${e.nombre} <span style="font-size:.72rem;color:var(--muted);font-weight:400">${cat?cat.nombre:''}</span></div>
+      <div style="display:flex;flex-wrap:wrap;gap:4px">`;
+    diasTotales.forEach(({fecha,dt,d})=>{
+      const esDS=dt.getDay()===0||dt.getDay()===6;
+      const f=keys.reduce((acc,k)=>acc||((S.fichajes[k]||{})[e.id]||{})[fecha],null)||{};
+      const tieneH=calcH(f.mE,f.mS)+calcH(f.tE,f.tS)>0;
+      let bg,icon,title;
+      if(esDS){bg='var(--surface3)';icon='';title='Fin de semana';}
+      else if(f.enfermo){bg='rgba(245,158,11,.25)';icon='🏥';title=`Enfermo — ${S.config.hsEnf}h`;}
+      else if(tieneH){const ht=calcH(f.mE,f.mS)+calcH(f.tE,f.tS);bg='rgba(52,211,153,.2)';icon='✓';title=`${ht.toFixed(1)}h`;}
+      else{bg='rgba(248,113,113,.18)';icon='✕';title='Ausente';}
+      html+=`<div title="${DSEM[dt.getDay()]} ${d} — ${title}" style="width:32px;height:32px;border-radius:5px;background:${bg};display:flex;flex-direction:column;align-items:center;justify-content:center;font-size:.56rem;cursor:default;border:1px solid rgba(255,255,255,.04)">
+        <span style="color:var(--muted);font-size:.5rem">${d}</span><span>${icon}</span>
+      </div>`;
+    });
+    html+=`</div></div>`;
+  });
+  cont.innerHTML=html;
+}
+
+// ═══════════════════════════════════════════════════════
+// EXPORTAR CSV
+// ═══════════════════════════════════════════════════════
+function exportarCSV(){
+  const cont=document.getElementById('liquidacion-container'),key=cont.dataset.key;if(!key)return;
+  const hsNorm=S.config.hsNorm;
+  let csv='Empleado,DNI,Tarifa,Hs totales,Hs normal,Hs extra,Bruto,Adelantos,Neto,Estado\n';
+  S.empleados.filter(e=>e.activo).forEach(e=>{
+    const vh=tarifaEmpEnPeriodo(e.id,key),tot=horasEmp(key,e.id);
+    const hN=Math.min(tot,hsNorm),hX=Math.max(0,tot-hsNorm),bruto=hN*vh+hX*vh*1.5;
+    const adel=totalAdelantosEnPeriodo(e.id,key),neto=Math.max(0,bruto-adel);
+    const pag=S.pagos[key]?.[e.id]||{pagado:false};
+    csv+=`"${e.nombre}","${e.dni||''}",${vh},${tot.toFixed(2)},${hN.toFixed(2)},${hX.toFixed(2)},${bruto.toFixed(2)},${adel},${neto.toFixed(2)},"${pag.pagado?'Pagado':'Pendiente'}"\n`;
+  });
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(new Blob([csv],{type:'text/csv;charset=utf-8;'}));
+  a.download=`liquidacion_${key}.csv`;a.click();
+}
+
+// ═══════════════════════════════════════════════════════
+// BACKUP
+// ═══════════════════════════════════════════════════════
+function hacerBackup(){
+  const ts=new Date(),pad=n=>String(n).padStart(2,'0');
+  const nombre=`planilla_backup_${ts.getFullYear()}${pad(ts.getMonth()+1)}${pad(ts.getDate())}_${pad(ts.getHours())}${pad(ts.getMinutes())}.json`;
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(new Blob([JSON.stringify({version:3,exportado:ts.toISOString(),data:S},null,2)],{type:'application/json'}));
+  a.download=nombre;a.click();
+  const el=document.getElementById('backup-fecha');if(el)el.textContent='Último: '+ts.toLocaleString('es-AR');
+}
+let pendingImport=null;
+function importarBackup(ev){
+  const file=ev.target.files[0];if(!file)return;
+  const reader=new FileReader();
+  reader.onload=e=>{
+    try{
+      const parsed=JSON.parse(e.target.result);
+      if(!parsed.data||!Array.isArray(parsed.data.empleados)){alert('❌ Archivo no válido.');return;}
+      pendingImport=parsed;
+      const d=parsed.data,fe=parsed.exportado?new Date(parsed.exportado).toLocaleString('es-AR'):'desconocida';
+      abrirModal(`
+        <div style="font-size:1rem;font-weight:700;margin-bottom:12px">⚠️ Importar backup</div>
+        <div style="font-size:.8rem;color:var(--muted);margin-bottom:5px">Archivo: <strong style="color:var(--text)">${file.name}</strong></div>
+        <div style="font-size:.8rem;color:var(--muted);margin-bottom:14px;line-height:1.7">
+          <strong>Exportado:</strong> ${fe}<br>
+          <strong>Empleados:</strong> ${d.empleados?.length||0}<br>
+          <strong>Períodos:</strong> ${Object.keys(d.fichajes||{}).length}<br>
+          <strong>Adelantos:</strong> ${d.adelantos?.length||0}
+        </div>
+        <div style="background:rgba(248,113,113,.1);border:1px solid rgba(248,113,113,.3);border-radius:8px;padding:9px 13px;font-size:.78rem;color:var(--danger);margin-bottom:16px">⚠️ Esto reemplazará <strong>todos</strong> los datos actuales.</div>
+        <div style="display:flex;gap:9px;justify-content:flex-end">
+          <button class="btn btn-outline btn-sm" onclick="cerrarModal()">Cancelar</button>
+          <button class="btn btn-red btn-sm" onclick="confirmarImport()">Sí, importar</button>
+        </div>`);
+    }catch(err){alert('❌ No se pudo leer el archivo.');}
+    ev.target.value='';
+  };
+  reader.readAsText(file);
+}
+function confirmarImport(){
+  if(!pendingImport)return;
+  S=pendingImport.data;
+  // defaults de campos nuevos
+  if(!S.config) S.config={hsEnf:8,hsNorm:48};
+  if(!S.config.mEntrada) S.config.mEntrada='07:00';
+  if(!S.config.mSalida)  S.config.mSalida='12:00';
+  if(!S.config.tEntrada) S.config.tEntrada='13:00';
+  if(!S.config.tSalida)  S.config.tSalida='17:00';
+  if(!S.quincenasCerradas) S.quincenasCerradas={};
+  if(!S.adelantos) S.adelantos=[];
+  if(!S.pagos) S.pagos={};
+  if(!S.fichajes) S.fichajes={};
+  if(!S.feriados) S.feriados={};
+  // migrar empleados de versiones anteriores
+  S.empleados.forEach(e=>{
+    if(e.activo===undefined||e.activo===null) e.activo=true;
+    if(!e.histCat||!e.histCat.length){
+      const catId=e.categoriaId||0;
+      const cat=S.categorias.find(c=>c.id==catId);
+      e.histCat=[{catId:catId, desde:'2020-01-01', valorHora:cat?cat.valorHora:0}];
+    }
+    e.histCat.forEach(h=>{
+      if(h.valorHora===undefined||h.valorHora===null||h.valorHora===0){
+        const cat=S.categorias.find(c=>c.id==h.catId);
+        if(cat) h.valorHora=cat.valorHora;
+      }
+    });
+  });
+  save();cerrarModal();
+  cargarConfig();renderCats();renderEmps();updSelects();
+  ['fichaje-container','quincena-container','liquidacion-container','asistencia-container'].forEach(id=>{
+    const el=document.getElementById(id);if(el)el.innerHTML='<div class="empty" style="margin-top:14px"><span>🔄</span>Backup importado. Seleccioná el período.</div>';
+  });
+  document.getElementById('liq-actions').style.display='none';
+  alert(`✅ Importado correctamente.\n${S.empleados.length} empleados · ${S.adelantos.length} adelantos.`);
+}
+
+// ═══════════════════════════════════════════════════════
+// PLANILLA DIARIA IMPRIMIBLE
+// ═══════════════════════════════════════════════════════
+function renderPlanilla(){
+  const a=document.getElementById('pl-anio').value,m=document.getElementById('pl-mes').value;
+  const q=document.getElementById('pl-quincena').value,formato=document.getElementById('pl-formato').value;
+  const key=periodoKey(a,m,q),dias=diasPeriodo(a,m,q);
+  const emps=S.empleados.filter(e=>e.activo!==false);
+  const cont=document.getElementById('planilla-container');
+  if(!emps.length){cont.innerHTML='<div class="empty"><span>👥</span>Sin empleados.</div>';return;}
+  const titulo=`${q}ª quincena — ${MESES[parseInt(m)-1]} ${a}`;
+  const estadoClase={'presente':'p-present','ausente':'p-ausente','enfermo':'p-enfermo','tardanza':'p-tardanza','vacio':''};
+  const estadoTexto={'presente':'Presente','ausente':'Ausente','enfermo':'🏥 Enfermedad','tardanza':'⚠️ Fuera horario','vacio':'—'};
+  let html=`<div style="margin-bottom:14px;font-weight:700;font-size:.93rem;color:var(--accent)">${titulo} — Planilla de asistencia</div>`;
+
+  if(formato==='dia'){
+    // UNA HOJA POR DÍA
+    dias.forEach(({fecha,dt,d},idx)=>{
+      const nomDia=DSEM[dt.getDay()];
+      html+=`<div class="print-sheet ${idx>0?'page-break':''}">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;border-bottom:2px solid #1e293b;padding-bottom:8px">
+          <div><div style="font-size:1.1rem;font-weight:700">${nomDia} ${d} — ${MESES[parseInt(m)-1]} ${a}</div><div style="font-size:.8rem;color:#64748b">${q}ª quincena</div></div>
+          <div style="font-size:.8rem;color:#64748b">Firma supervisor: __________________</div>
+        </div>
+        <table>
+          <thead><tr><th>Empleado</th><th>Categoría</th><th>Ent. mañana</th><th>Sal. mañana</th><th>Ent. tarde</th><th>Sal. tarde</th><th>Total Hs</th><th>Estado</th><th>Firma</th></tr></thead>
+          <tbody>`;
+      emps.forEach(e=>{
+        const hc=catActualEmp(e),cat=hc?S.categorias.find(c=>c.id==hc.catId):null;
+        const f=((S.fichajes[key]||{})[e.id]||{})[fecha]||{};
+        const est=estadoEmp(f,fecha),h=f.ausente?0:f.enfermo?S.config.hsEnf:calcH(f.mE,f.mS)+calcH(f.tE,f.tS);
+        html+=`<tr class="${estadoClase[est]||''}">
+          <td style="font-weight:600">${e.nombre}</td>
+          <td>${cat?cat.nombre:'?'}</td>
+          <td>${f.mE||'—'}</td><td>${f.mS||'—'}</td>
+          <td>${f.tE||'—'}</td><td>${f.tS||'—'}</td>
+          <td style="font-weight:700">${h>0?h.toFixed(1)+'h':'—'}</td>
+          <td style="font-weight:600">${estadoTexto[est]||'—'}</td>
+          <td style="min-width:80px"></td>
+        </tr>`;
+      });
+      html+=`</tbody></table></div>`;
+    });
+  } else {
+    // UNA HOJA POR EMPLEADO
+    emps.forEach((e,idx)=>{
+      const hc=catActualEmp(e),cat=hc?S.categorias.find(c=>c.id==hc.catId):null;
+      const fichs=(S.fichajes[key]||{})[e.id]||{};
+      let totalH=0,totalPres=0,totalEnf=0,totalAus=0;
+      let rows='';
+      dias.forEach(({fecha,dt,d})=>{
+        const nomDia=DSEM[dt.getDay()],esDS=dt.getDay()===0||dt.getDay()===6;
+        const f=fichs[fecha]||{},est=estadoEmp(f,fecha);
+        const esFerP=S.feriados&&S.feriados[fecha];
+        const h=f.ausente?0:esFerP?S.config.hsEnf:f.enfermo?S.config.hsEnf:calcH(f.mE,f.mS)+calcH(f.tE,f.tS);
+        if(!esDS){totalH+=h;if(est==='presente'||est==='tardanza')totalPres++;else if(est==='enfermo')totalEnf++;else if(est==='ausente')totalAus++;}
+        rows+=`<tr class="${esDS?'':''+( estadoClase[est]||'')}">
+          <td>${nomDia} ${d}${esDS?' (fin de semana)':''}</td>
+          <td>${esDS?'—':f.mE||'—'}</td><td>${esDS?'—':f.mS||'—'}</td>
+          <td>${esDS?'—':f.tE||'—'}</td><td>${esDS?'—':f.tS||'—'}</td>
+          <td style="font-weight:700">${esDS?'—':h>0?h.toFixed(1)+'h':'—'}</td>
+          <td>${esDS?'—':estadoTexto[est]||'—'}</td>
+          <td>${esDS?'':''}</td>
+        </tr>`;
+      });
+      html+=`<div class="print-sheet ${idx>0?'page-break':''}">
+        <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:12px;border-bottom:2px solid #1e293b;padding-bottom:8px">
+          <div>
+            <div style="font-size:1.15rem;font-weight:700">${e.nombre}</div>
+            <div style="font-size:.8rem;color:#64748b">${cat?cat.nombre:'?'} · Ingreso: ${fmtFecha(e.ingreso)} · DNI: ${e.dni||'—'}</div>
+            <div style="font-size:.8rem;color:#64748b">${titulo}</div>
+          </div>
+          <div style="text-align:right;font-size:.8rem">
+            <div>Presentes: <strong>${totalPres}</strong> · Enfermedades: <strong>${totalEnf}</strong> · Ausencias: <strong>${totalAus}</strong></div>
+            <div>Total horas: <strong>${totalH.toFixed(1)}h</strong></div>
+          </div>
+        </div>
+        <table>
+          <thead><tr><th>Día</th><th>Ent. M.</th><th>Sal. M.</th><th>Ent. T.</th><th>Sal. T.</th><th>Total Hs</th><th>Estado</th><th>Firma empleado</th></tr></thead>
+          <tbody>${rows}</tbody>
+        </table>
+        <div style="margin-top:16px;display:flex;gap:40px;font-size:.85rem">
+          <div>Firma empleado: _______________________</div>
+          <div>Firma supervisor: _______________________</div>
+        </div>
+      </div>`;
+    });
+  }
+  cont.innerHTML=html;
+}
+
+// ═══════════════════════════════════════════════════════
+// EXPORTAR / IMPRIMIR PERSONAL
+// ═══════════════════════════════════════════════════════
+function exportarExcelPersonal(){
+  if(!S.empleados.length)return alert('No hay personal cargado.');
+  const rows=S.empleados.map((e,i)=>{
+    const hc=catActualEmp(e);
+    const cat=hc?S.categorias.find(c=>c.id==hc.catId):null;
+    return {
+      'N°': i+1,
+      'Nombre': e.nombre,
+      'DNI': e.dni||'',
+      'Teléfono': e.tel||'',
+      'Fecha Ingreso': fmtFecha(e.ingreso),
+      'Fecha Nacimiento': fmtFecha(e.fnac),
+      'Categoría': cat?cat.nombre:'',
+      '$/hora': hc?hc.valorHora:0,
+      'Estado': e.activo!==false?'Activo':'Baja',
+      'Notas': e.notas||''
+    };
+  });
+  const ws=XLSX.utils.json_to_sheet(rows);
+  // ancho de columnas
+  ws['!cols']=[{wch:5},{wch:25},{wch:14},{wch:16},{wch:15},{wch:18},{wch:14},{wch:10},{wch:8},{wch:30}];
+  const wb=XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb,ws,'Personal');
+  // hoja historial de categorías
+  const rowsHist=[];
+  S.empleados.forEach(e=>{
+    (e.histCat||[]).forEach(h=>{
+      const cat=S.categorias.find(c=>c.id==h.catId);
+      rowsHist.push({'Empleado':e.nombre,'Categoría':cat?cat.nombre:'?','$/hora':h.valorHora,'Vigente desde':fmtFecha(h.desde)});
+    });
+  });
+  if(rowsHist.length){
+    const ws2=XLSX.utils.json_to_sheet(rowsHist);
+    ws2['!cols']=[{wch:25},{wch:14},{wch:10},{wch:15}];
+    XLSX.utils.book_append_sheet(wb,ws2,'Historial categorías');
+  }
+  const hoy=new Date(),pad=n=>String(n).padStart(2,'0');
+  const nombre=`personal_${hoy.getFullYear()}${pad(hoy.getMonth()+1)}${pad(hoy.getDate())}.xlsx`;
+  XLSX.writeFile(wb,nombre);
+}
+
+function imprimirListado(){
+  if(!S.empleados.length)return alert('No hay personal cargado.');
+  const hoy=new Date().toLocaleDateString('es-AR');
+  const filas=S.empleados.filter(e=>e.activo!==false).map((e,i)=>{
+    const hc=catActualEmp(e);
+    const cat=hc?S.categorias.find(c=>c.id==hc.catId):null;
+    return `<tr>
+      <td>${i+1}</td>
+      <td><strong>${e.nombre}</strong></td>
+      <td>${e.dni||'—'}</td>
+      <td>${e.tel||'—'}</td>
+      <td>${fmtFecha(e.ingreso)}</td>
+      <td>${fmtFecha(e.fnac)}</td>
+      <td>${cat?cat.nombre:'—'}</td>
+      <td>$${hc?fmt(hc.valorHora):'—'}/h</td>
+    </tr>`;
+  }).join('');
+  const win=window.open('','_blank');
+  win.document.write(`<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Listado de Personal</title>
+  <style>
+    body{font-family:Arial,sans-serif;padding:20px;color:#111;}
+    h2{margin-bottom:4px;}
+    .sub{font-size:12px;color:#666;margin-bottom:16px;}
+    table{width:100%;border-collapse:collapse;font-size:12px;}
+    th{background:#1e293b;color:white;padding:7px 10px;text-align:left;}
+    td{padding:6px 10px;border-bottom:1px solid #ddd;}
+    tr:nth-child(even) td{background:#f8fafc;}
+    .footer{margin-top:20px;font-size:11px;color:#888;}
+  </style></head><body>
+  <h2>📋 Listado de Personal</h2>
+  <div class="sub">Generado el ${hoy} · Total: ${S.empleados.filter(e=>e.activo!==false).length} empleados activos</div>
+  <table>
+    <thead><tr><th>#</th><th>Nombre</th><th>DNI</th><th>Teléfono</th><th>Ingreso</th><th>Nacimiento</th><th>Categoría</th><th>$/hora</th></tr></thead>
+    <tbody>${filas}</tbody>
+  </table>
+  <div class="footer">Planilla de Personal</div>
+  </body></html>`);
+  win.document.close();
+  win.print();
+}
+
+// ═══════════════════════════════════════════════════════
+// ARRANQUE
+// ═══════════════════════════════════════════════════════
+loadState();
+// defaults de horario si no existen
+if(!S.config.mEntrada)S.config.mEntrada='07:00';
+if(!S.config.mSalida)S.config.mSalida='12:00';
+if(!S.config.tEntrada)S.config.tEntrada='13:00';
+if(!S.config.tSalida)S.config.tSalida='17:00';
+initSelects();cargarConfig();renderCats();renderEmps();updSelects();
+</script>
+</body>
+</html>

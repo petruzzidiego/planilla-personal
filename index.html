@@ -803,7 +803,7 @@ function renderFichaje(){
         ${cerrada?`<span class="cerrada-badge">✓ Cerrada ${fmtFecha(cerrada.cerradaEn?.slice(0,10))}</span>`:'<span class="abierta-badge">Abierta</span>'}
       </div>
       <div style="display:flex;gap:7px">
-        ${cerrada?`<button class="btn btn-outline btn-sm no-print" onclick="reabrirQuincena('${key}')">🔓 Reabrir quincena</button>`:`<button class="btn btn-green btn-sm no-print" onclick="guardarFichaje('${key}')">💾 Guardar</button>`}
+        ${cerrada?'':`<button class="btn btn-green btn-sm no-print" onclick="guardarFichaje('${key}')">💾 Guardar</button>`}
         ${cerrada?'':`<button class="btn btn-warn btn-sm no-print" onclick="cerrarQuincena('${key}')">🔒 Cerrar quincena</button>`}
       </div>
     </div>
@@ -829,10 +829,10 @@ function renderFichaje(){
       </div>
       <div class="dia-body" id="dbody_${fecha}">
         <div style="display:flex;justify-content:flex-end;margin-bottom:8px" class="no-print">
-          <label class="fer-btn ${(S.feriados&&S.feriados[fecha])?'activo':''}" id="ferbtn_${fecha}" onclick="toggleFeriado('${key}','${fecha}')">
+          <div class="fer-btn ${(S.feriados&&S.feriados[fecha])?'activo':''}" id="ferbtn_${fecha}" onclick="toggleFeriado('${key}','${fecha}')">
             <input type="checkbox" ${(S.feriados&&S.feriados[fecha])?'checked':''} style="pointer-events:none;width:13px;height:13px;accent-color:#6366f1">
             🗓️ ${(S.feriados&&S.feriados[fecha])?'Feriado — quitar':'Marcar como feriado'}
-          </label>
+          </div>
         </div>
         <div id="filas_${fecha}">${empsActivos.map(e=>buildFilaEmp(key,fecha,e,!!cerrada)).join('')}</div>
       </div>`;
@@ -953,8 +953,9 @@ function toggleFeriado(key,fecha){
   const ferBtn=document.getElementById('ferbtn_'+fecha);
   if(ferBtn){
     ferBtn.className='fer-btn'+(esFer?' activo':'');
-    ferBtn.querySelector('input').checked=esFer;
-    ferBtn.childNodes[ferBtn.childNodes.length-1].textContent=' '+(esFer?'Feriado — quitar':'Marcar como feriado');
+    const cb=ferBtn.querySelector('input');
+    if(cb) cb.checked=esFer;
+    ferBtn.lastChild.textContent=' 🗓️ '+(esFer?'Feriado — quitar':'Marcar como feriado');
   }
   refreshDiaBadge(key,fecha);
   save();
@@ -967,11 +968,6 @@ function cerrarQuincena(key){
   const tarifas={};
   S.empleados.filter(e=>e.activo).forEach(e=>{const hc=catActualEmp(e);tarifas[e.id]=hc?hc.valorHora:0;});
   S.quincenasCerradas[key]={cerradaEn:new Date().toISOString(),tarifas};
-  save();renderFichaje();
-}
-function reabrirQuincena(key){
-  if(!confirm('¿Reabrir esta quincena? Vas a poder editar los horarios nuevamente. Las tarifas congeladas se eliminarán.'))return;
-  delete S.quincenasCerradas[key];
   save();renderFichaje();
 }
 

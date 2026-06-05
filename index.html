@@ -115,13 +115,11 @@ tr:hover td{background:rgba(79,142,247,.03);}
 .horario-config input[type="time"]{width:100px;font-size:.82rem;padding:4px 7px;}
 
 /* PLANILLA IMPRESIÓN */
-.print-sheet{display:block;background:white;border:1px solid var(--border);border-radius:9px;padding:16px;margin-bottom:20px;}
+.print-sheet{display:none;}
 @media print{
-  body > h1, body > p.subtitle, .backup-bar, .tabs, .tab-panel:not(.active){display:none!important;}
+  body{background:white!important;color:#111!important;padding:10px!important;}
   .no-print{display:none!important;}
-  /* Ocultar todo el contenido excepto la planilla cuando se imprime desde esa pestaña */
-  #tab-planilla .card.no-print{display:none!important;}
-  .print-sheet{display:block!important;border:none;padding:0;margin:0;}
+  .print-sheet{display:block!important;}
   .print-sheet table{width:100%;border-collapse:collapse;font-size:11px;}
   .print-sheet th{background:#e2e8f0!important;color:#333!important;padding:6px 8px;border:1px solid #999;text-align:left;}
   .print-sheet td{padding:5px 8px;border:1px solid #ccc;}
@@ -130,6 +128,11 @@ tr:hover td{background:rgba(79,142,247,.03);}
   .print-sheet .p-enfermo{background:#fce7f3;}
   .print-sheet .p-tardanza{background:#fef3c7;}
   .page-break{page-break-before:always;}
+}
+
+@media print{
+  body{background:white;color:#111;}
+  .no-print{display:none!important;}
   .card,.dia-card{border:1px solid #ccc;background:white;}
   th{background:#f0f0f0;color:#333;}
   .tab-panel{display:block!important;}
@@ -803,7 +806,7 @@ function renderFichaje(){
         ${cerrada?`<span class="cerrada-badge">✓ Cerrada ${fmtFecha(cerrada.cerradaEn?.slice(0,10))}</span>`:'<span class="abierta-badge">Abierta</span>'}
       </div>
       <div style="display:flex;gap:7px">
-        ${cerrada?'':`<button class="btn btn-green btn-sm no-print" onclick="guardarFichaje('${key}')">💾 Guardar</button>`}
+        ${cerrada?`<button class="btn btn-outline btn-sm no-print" onclick="reabrirQuincena('${key}')">🔓 Reabrir quincena</button>`:`<button class="btn btn-green btn-sm no-print" onclick="guardarFichaje('${key}')">💾 Guardar</button>`}
         ${cerrada?'':`<button class="btn btn-warn btn-sm no-print" onclick="cerrarQuincena('${key}')">🔒 Cerrar quincena</button>`}
       </div>
     </div>
@@ -829,10 +832,9 @@ function renderFichaje(){
       </div>
       <div class="dia-body" id="dbody_${fecha}">
         <div style="display:flex;justify-content:flex-end;margin-bottom:8px" class="no-print">
-          <div class="fer-btn ${(S.feriados&&S.feriados[fecha])?'activo':''}" id="ferbtn_${fecha}" onclick="toggleFeriado('${key}','${fecha}')">
-            <input type="checkbox" ${(S.feriados&&S.feriados[fecha])?'checked':''} style="pointer-events:none;width:13px;height:13px;accent-color:#6366f1">
+          <button class="fer-btn ${(S.feriados&&S.feriados[fecha])?'activo':''}" id="ferbtn_${fecha}" onclick="toggleFeriado('${key}','${fecha}')">
             🗓️ ${(S.feriados&&S.feriados[fecha])?'Feriado — quitar':'Marcar como feriado'}
-          </div>
+          </button>
         </div>
         <div id="filas_${fecha}">${empsActivos.map(e=>buildFilaEmp(key,fecha,e,!!cerrada)).join('')}</div>
       </div>`;
@@ -841,9 +843,9 @@ function renderFichaje(){
 }
 
 function buildFilaEmp(key,fecha,e,readonly){
-  const esFeriado=S.feriados&&S.feriados[fecha];
   const f=((S.fichajes[key]||{})[e.id]||{})[fecha]||{};
   const enfermo=f.enfermo||false, ausente=f.ausente||false;
+  const esFeriado=!!(S.feriados&&S.feriados[fecha]);
   const h=calcH(f.mE,f.mS)+calcH(f.tE,f.tS);
   const hTotal=esFeriado?S.config.hsEnf:enfermo?S.config.hsEnf:h;
   const bloq=esFeriado||enfermo||ausente||readonly;
@@ -872,14 +874,12 @@ function buildFilaEmp(key,fecha,e,readonly){
       <input type="time" id="tS_${e.id}_${fecha}" value="${f.tS||''}" onchange="onTime('${key}','${fecha}',${e.id})" ${dis} style="${op}">
     </div>
     ${(readonly||esFeriado)?`<span style="font-size:.72rem;color:${esFeriado?'#6366f1':'var(--muted)'}">🔒${esFeriado?' Feriado':''}</span>`:`<div style="display:flex;gap:5px;flex-wrap:wrap">
-      <label class="aus-btn${ausente?' activo':''}" onclick="onAusente('${key}','${fecha}',${e.id})">
-        <input type="checkbox" ${ausente?'checked':''} style="pointer-events:none;width:14px;height:14px;accent-color:var(--danger)">
+      <button class="aus-btn${ausente?' activo':''}" onclick="onAusente('${key}','${fecha}',${e.id})">
         ✕ ${ausente?'Ausente — quitar':'Ausente'}
-      </label>
-      <label class="enf-btn${enfermo?' activo':''}" onclick="onEnfermedad('${key}','${fecha}',${e.id})">
-        <input type="checkbox" ${enfermo?'checked':''} style="pointer-events:none;width:14px;height:14px;accent-color:var(--rosa)">
+      </button>
+      <button class="enf-btn${enfermo?' activo':''}" onclick="onEnfermedad('${key}','${fecha}',${e.id})">
         🏥 ${enfermo?'Enfermo — quitar':'Enfermedad'}
-      </label>
+      </button>
     </div>`}
     <div class="horas-day" style="color:${hColor}">
       ${ausente?'—':hTotal>0?hTotal.toFixed(1)+'h':'—'}
@@ -897,7 +897,7 @@ function onTime(key,fecha,empId){
   S.fichajes[key][empId][fecha]={mE:document.getElementById(`mE_${empId}_${fecha}`)?.value||'',mS:document.getElementById(`mS_${empId}_${fecha}`)?.value||'',tE:document.getElementById(`tE_${empId}_${fecha}`)?.value||'',tS:document.getElementById(`tS_${empId}_${fecha}`)?.value||'',enfermo:prev.enfermo||false,ausente:prev.ausente||false};
   // re-render la fila para actualizar colores de estado
   const e=S.empleados.find(x=>x.id==empId);
-  if(e){const old=document.getElementById(`edr_${empId}_${fecha}`);if(old)old.outerHTML=buildFilaEmp(key,fecha,e,false);}
+  if(e){const old=document.getElementById(`edr_${empId}_${fecha}`);if(old)old.outerHTML=buildFilaEmp(key,fecha,e,!!(S.quincenasCerradas&&S.quincenasCerradas[key]));}
   refreshDiaBadge(key,fecha);
 }
 function onAusente(key,fecha,empId){
@@ -908,7 +908,7 @@ function onAusente(key,fecha,empId){
   if(prev.ausente){prev.enfermo=false;prev.mE='';prev.mS='';prev.tE='';prev.tS='';}
   S.fichajes[key][empId][fecha]=prev;
   const e=S.empleados.find(x=>x.id==empId);
-  if(e){const old=document.getElementById(`edr_${empId}_${fecha}`);if(old)old.outerHTML=buildFilaEmp(key,fecha,e,false);}
+  if(e){const old=document.getElementById(`edr_${empId}_${fecha}`);if(old)old.outerHTML=buildFilaEmp(key,fecha,e,!!(S.quincenasCerradas&&S.quincenasCerradas[key]));}
   refreshDiaBadge(key,fecha);
 }
 function onEnfermedad(key,fecha,empId){
@@ -919,7 +919,7 @@ function onEnfermedad(key,fecha,empId){
   if(prev.enfermo){prev.ausente=false;prev.mE='';prev.mS='';prev.tE='';prev.tS='';}
   S.fichajes[key][empId][fecha]=prev;
   const e=S.empleados.find(x=>x.id==empId);
-  if(e){const old=document.getElementById(`edr_${empId}_${fecha}`);if(old)old.outerHTML=buildFilaEmp(key,fecha,e,false);}
+  if(e){const old=document.getElementById(`edr_${empId}_${fecha}`);if(old)old.outerHTML=buildFilaEmp(key,fecha,e,!!(S.quincenasCerradas&&S.quincenasCerradas[key]));}
   refreshDiaBadge(key,fecha);
 }
 function refreshDiaBadge(key,fecha){
@@ -941,27 +941,28 @@ function refreshDiaBadge(key,fecha){
 }
 function toggleFeriado(key,fecha){
   if(!S.feriados) S.feriados={};
-  S.feriados[fecha]=!S.feriados[fecha];
-  if(!S.feriados[fecha]) delete S.feriados[fecha];
-  // re-renderizar todas las filas del día
+  if(S.feriados[fecha]) delete S.feriados[fecha];
+  else S.feriados[fecha]=true;
   const empsActivos=S.empleados.filter(e=>e.activo!==false);
   const filasEl=document.getElementById('filas_'+fecha);
   const cerrada=!!S.quincenasCerradas[key];
   if(filasEl) filasEl.innerHTML=empsActivos.map(e=>buildFilaEmp(key,fecha,e,cerrada)).join('');
-  // actualizar botón
   const esFer=!!(S.feriados&&S.feriados[fecha]);
   const ferBtn=document.getElementById('ferbtn_'+fecha);
   if(ferBtn){
     ferBtn.className='fer-btn'+(esFer?' activo':'');
-    const cb=ferBtn.querySelector('input');
-    if(cb) cb.checked=esFer;
-    ferBtn.lastChild.textContent=' 🗓️ '+(esFer?'Feriado — quitar':'Marcar como feriado');
+    ferBtn.textContent='🗓️ '+(esFer?'Feriado — quitar':'Marcar como feriado');
   }
   refreshDiaBadge(key,fecha);
   save();
 }
 function guardarFichaje(key){
   save();const btn=event?.target;if(btn){const o=btn.textContent;btn.textContent='✅ Guardado';setTimeout(()=>btn.textContent=o,1500);}
+}
+function reabrirQuincena(key){
+  if(!confirm('¿Reabrir esta quincena? Podrás editar los horarios pero las tarifas congeladas se eliminarán.'))return;
+  delete S.quincenasCerradas[key];
+  save();renderFichaje();
 }
 function cerrarQuincena(key){
   if(!confirm('¿Cerrar esta quincena? Se congelarán las tarifas actuales de cada empleado. No podrás editar los horarios.'))return;
@@ -1297,7 +1298,7 @@ function renderPlanilla(){
     // UNA HOJA POR DÍA
     dias.forEach(({fecha,dt,d},idx)=>{
       const nomDia=DSEM[dt.getDay()];
-      html+=`<div class="print-sheet ${idx>0?'page-break':''}">
+      html+=`<div class="print-sheet ${idx>0?'page-break':''}" style="margin-bottom:20px;background:white;border:1px solid var(--border);border-radius:9px;padding:16px;">
         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;border-bottom:2px solid #1e293b;padding-bottom:8px">
           <div><div style="font-size:1.1rem;font-weight:700">${nomDia} ${d} — ${MESES[parseInt(m)-1]} ${a}</div><div style="font-size:.8rem;color:#64748b">${q}ª quincena</div></div>
           <div style="font-size:.8rem;color:#64748b">Firma supervisor: __________________</div>
@@ -1343,7 +1344,7 @@ function renderPlanilla(){
           <td>${esDS?'':''}</td>
         </tr>`;
       });
-      html+=`<div class="print-sheet ${idx>0?'page-break':''}">
+      html+=`<div class="print-sheet ${idx>0?'page-break':''}" style="margin-bottom:20px;background:white;border:1px solid var(--border);border-radius:9px;padding:16px;">
         <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:12px;border-bottom:2px solid #1e293b;padding-bottom:8px">
           <div>
             <div style="font-size:1.15rem;font-weight:700">${e.nombre}</div>

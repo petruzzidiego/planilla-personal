@@ -410,6 +410,13 @@ const COLORS=['#4f8ef7','#34d399','#f59e0b','#f87171','#a78bfa','#38bdf8','#fb71
 // HELPERS
 // ═══════════════════════════════════════════════════════
 function calcH(e,s){ if(!e||!s)return 0; const[eh,em]=e.split(':').map(Number),[sh,sm]=s.split(':').map(Number),m=(sh*60+sm)-(eh*60+em); return m>0?m/60:0; }
+function calcHDia(f){
+  // Si tiene mañana y tarde: suma ambos turnos
+  const hM=calcH(f.mE,f.mS), hT=calcH(f.tE,f.tS);
+  // Si solo tiene entrada mañana y salida tarde (corrido sin pausa): usa mE→tS
+  if(f.mE&&!f.mS&&!f.tE&&f.tS) return calcH(f.mE,f.tS);
+  return hM+hT;
+}
 function periodoKey(a,m,q){ return `${a}-${String(m).padStart(2,'0')}-${q}`; }
 function diasPeriodo(a,m,q){
   a=parseInt(a);m=parseInt(m);q=parseInt(q);
@@ -440,7 +447,7 @@ function horasEmp(key,empId){
     if(esFer) return t+S.config.hsEnf;
     if(f.ausente) return t;
     if(f.enfermo) return t+S.config.hsEnf;
-    return t+calcH(f.mE,f.mS)+calcH(f.tE,f.tS);
+    return t+calcHDia(f);
   },0);
 }
 function diasAusenteEmp(key,empId){
@@ -817,7 +824,7 @@ function renderFichaje(){
   const grid=document.getElementById('dias-grid');
   dias.forEach(({fecha,dt,d})=>{
     const nomDia=DSEM[dt.getDay()],esDS=dt.getDay()===0||dt.getDay()===6;
-    let hDia=empsActivos.reduce((acc,e)=>{const f=((S.fichajes[key][e.id]||{})[fecha])||{};return acc+(f.enfermo?S.config.hsEnf:calcH(f.mE,f.mS)+calcH(f.tE,f.tS));},0);
+    let hDia=empsActivos.reduce((acc,e)=>{const f=((S.fichajes[key][e.id]||{})[fecha])||{};return acc+(f.enfermo?S.config.hsEnf:calcHDia(f));},0);
     const div=document.createElement('div');div.className='dia-card';div.id='dcard_'+fecha;
     div.innerHTML=`
       <div class="dia-header" onclick="toggleDia('${fecha}')">
@@ -846,7 +853,7 @@ function buildFilaEmp(key,fecha,e,readonly){
   const f=((S.fichajes[key]||{})[e.id]||{})[fecha]||{};
   const enfermo=f.enfermo||false, ausente=f.ausente||false;
   const esFeriado=!!(S.feriados&&S.feriados[fecha]);
-  const h=calcH(f.mE,f.mS)+calcH(f.tE,f.tS);
+  const h=calcHDia(f);
   const hTotal=esFeriado?S.config.hsEnf:enfermo?S.config.hsEnf:h;
   const bloq=esFeriado||enfermo||ausente||readonly;
   const dis=bloq?'disabled':'';
@@ -874,6 +881,7 @@ function buildFilaEmp(key,fecha,e,readonly){
       <input type="time" id="tS_${e.id}_${fecha}" value="${f.tS||''}" onchange="onTime('${key}','${fecha}',${e.id})" ${dis} style="${op}">
     </div>
     ${(readonly||esFeriado)?`<span style="font-size:.72rem;color:${esFeriado?'#6366f1':'var(--muted)'}">🔒${esFeriado?' Feriado':''}</span>`:`<div style="display:flex;gap:5px;flex-wrap:wrap">
+      <button class="btn btn-outline btn-sm" onclick="diaCompleto('${key}','${fecha}',${e.id})" style="font-size:.75rem;padding:5px 10px">✅ Día completo</button>
       <button class="aus-btn${ausente?' activo':''}" onclick="onAusente('${key}','${fecha}',${e.id})">
         ✕ ${ausente?'Ausente — quitar':'Ausente'}
       </button>
@@ -896,6 +904,21 @@ function onTime(key,fecha,empId){
   const prev=S.fichajes[key][empId][fecha]||{};
   S.fichajes[key][empId][fecha]={mE:document.getElementById(`mE_${empId}_${fecha}`)?.value||'',mS:document.getElementById(`mS_${empId}_${fecha}`)?.value||'',tE:document.getElementById(`tE_${empId}_${fecha}`)?.value||'',tS:document.getElementById(`tS_${empId}_${fecha}`)?.value||'',enfermo:prev.enfermo||false,ausente:prev.ausente||false};
   // re-render la fila para actualizar colores de estado
+  const e=S.empleados.find(x=>x.id==empId);
+  if(e){const old=document.getElementById(`edr_${empId}_${fecha}`);if(old)old.outerHTML=buildFilaEmp(key,fecha,e,!!(S.quincenasCerradas&&S.quincenasCerradas[key]));}
+  refreshDiaBadge(key,fecha);
+}
+function diaCompleto(key,fecha,empId){
+  if(!S.fichajes[key])S.fichajes[key]={};
+  if(!S.fichajes[key][empId])S.fichajes[key][empId]={};
+  const prev=S.fichajes[key][empId][fecha]||{};
+  // cargar horario estándar configurado
+  prev.mE=S.config.mEntrada||'07:00';
+  prev.mS=S.config.mSalida||'12:00';
+  prev.tE=S.config.tEntrada||'13:00';
+  prev.tS=S.config.tSalida||'17:00';
+  prev.enfermo=false; prev.ausente=false;
+  S.fichajes[key][empId][fecha]=prev;
   const e=S.empleados.find(x=>x.id==empId);
   if(e){const old=document.getElementById(`edr_${empId}_${fecha}`);if(old)old.outerHTML=buildFilaEmp(key,fecha,e,!!(S.quincenasCerradas&&S.quincenasCerradas[key]));}
   refreshDiaBadge(key,fecha);
@@ -928,7 +951,7 @@ function refreshDiaBadge(key,fecha){
     const f=((S.fichajes[key]||{})[e.id]||{})[fecha]||{};
     if(f.ausente){aus++;}
     else if(f.enfermo){enf++;h+=S.config.hsEnf;}
-    else{const hh=calcH(f.mE,f.mS)+calcH(f.tE,f.tS);if(hh>0){pres++;h+=hh;}}
+    else{const hh=calcHDia(f);if(hh>0){pres++;h+=hh;}}
   });
   const el=document.getElementById('resdh_'+fecha);
   if(el){
@@ -1110,10 +1133,10 @@ function renderAsistencia(){
       if(dt.getDay()===0||dt.getDay()===6)return;
       const esFer=S.feriados&&S.feriados[fecha];
       const f=keys.reduce((acc,k)=>acc||((S.fichajes[k]||{})[e.id]||{})[fecha],null)||{};
-      const tieneH=calcH(f.mE,f.mS)+calcH(f.tE,f.tS)>0;
+      const tieneH=calcHDia(f)>0;
       if(esFer){pres++;horas+=S.config.hsEnf;}
       else if(f.enfermo){enf++;horas+=S.config.hsEnf;}
-      else if(tieneH){pres++;horas+=calcH(f.mE,f.mS)+calcH(f.tE,f.tS);}
+      else if(tieneH){pres++;horas+=calcHDia(f);}
       else aus++;
     });
     const pct=diasHab>0?Math.round(((pres+enf)/diasHab)*100):0;
@@ -1167,11 +1190,11 @@ function renderAsistencia(){
     diasTotales.forEach(({fecha,dt,d})=>{
       const esDS=dt.getDay()===0||dt.getDay()===6;
       const f=keys.reduce((acc,k)=>acc||((S.fichajes[k]||{})[e.id]||{})[fecha],null)||{};
-      const tieneH=calcH(f.mE,f.mS)+calcH(f.tE,f.tS)>0;
+      const tieneH=calcHDia(f)>0;
       let bg,icon,title;
       if(esDS){bg='var(--surface3)';icon='';title='Fin de semana';}
       else if(f.enfermo){bg='rgba(245,158,11,.25)';icon='🏥';title=`Enfermo — ${S.config.hsEnf}h`;}
-      else if(tieneH){const ht=calcH(f.mE,f.mS)+calcH(f.tE,f.tS);bg='rgba(52,211,153,.2)';icon='✓';title=`${ht.toFixed(1)}h`;}
+      else if(tieneH){const ht=calcHDia(f);bg='rgba(52,211,153,.2)';icon='✓';title=`${ht.toFixed(1)}h`;}
       else{bg='rgba(248,113,113,.18)';icon='✕';title='Ausente';}
       html+=`<div title="${DSEM[dt.getDay()]} ${d} — ${title}" style="width:32px;height:32px;border-radius:5px;background:${bg};display:flex;flex-direction:column;align-items:center;justify-content:center;font-size:.56rem;cursor:default;border:1px solid rgba(255,255,255,.04)">
         <span style="color:var(--muted);font-size:.5rem">${d}</span><span>${icon}</span>
@@ -1309,7 +1332,7 @@ function renderPlanilla(){
       emps.forEach(e=>{
         const hc=catActualEmp(e),cat=hc?S.categorias.find(c=>c.id==hc.catId):null;
         const f=((S.fichajes[key]||{})[e.id]||{})[fecha]||{};
-        const est=estadoEmp(f,fecha),h=f.ausente?0:f.enfermo?S.config.hsEnf:calcH(f.mE,f.mS)+calcH(f.tE,f.tS);
+        const est=estadoEmp(f,fecha),h=f.ausente?0:f.enfermo?S.config.hsEnf:calcHDia(f);
         html+=`<tr class="${estadoClase[est]||''}">
           <td style="font-weight:600">${e.nombre}</td>
           <td>${cat?cat.nombre:'?'}</td>
@@ -1333,12 +1356,12 @@ function renderPlanilla(){
         const nomDia=DSEM[dt.getDay()],esDS=dt.getDay()===0||dt.getDay()===6;
         const f=fichs[fecha]||{},est=estadoEmp(f,fecha);
         const esFerP=S.feriados&&S.feriados[fecha];
-        const h=f.ausente?0:esFerP?S.config.hsEnf:f.enfermo?S.config.hsEnf:calcH(f.mE,f.mS)+calcH(f.tE,f.tS);
+        const h=f.ausente?0:esFerP?S.config.hsEnf:f.enfermo?S.config.hsEnf:calcHDia(f);
         if(!esDS){totalH+=h;if(est==='presente'||est==='tardanza')totalPres++;else if(est==='enfermo')totalEnf++;else if(est==='ausente')totalAus++;}
         rows+=`<tr class="${esDS?'':''+( estadoClase[est]||'')}">
           <td>${nomDia} ${d}${esDS?' (fin de semana)':''}</td>
-          <td>${esDS?'—':f.mE||'—'}</td><td>${esDS?'—':f.mS||'—'}</td>
-          <td>${esDS?'—':f.tE||'—'}</td><td>${esDS?'—':f.tS||'—'}</td>
+          <td>${esDS?'—':f.mE||'—'}</td><td>${esDS?'—':(f.mE&&!f.mS&&!f.tE&&f.tS)?'(corrido)':f.mS||'—'}</td>
+          <td>${esDS?'—':(f.mE&&!f.mS&&!f.tE&&f.tS)?'(corrido)':f.tE||'—'}</td><td>${esDS?'—':f.tS||'—'}</td>
           <td style="font-weight:700">${esDS?'—':h>0?h.toFixed(1)+'h':'—'}</td>
           <td>${esDS?'—':estadoTexto[est]||'—'}</td>
           <td>${esDS?'':''}</td>

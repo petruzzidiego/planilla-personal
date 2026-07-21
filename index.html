@@ -410,6 +410,16 @@ const COLORS=['#4f8ef7','#34d399','#f59e0b','#f87171','#a78bfa','#38bdf8','#fb71
 // HELPERS
 // ═══════════════════════════════════════════════════════
 function calcH(e,s){ if(!e||!s)return 0; const[eh,em]=e.split(':').map(Number),[sh,sm]=s.split(':').map(Number),m=(sh*60+sm)-(eh*60+em); return m>0?m/60:0; }
+function empActivoEnQuincena(emp, key){
+  if(emp.activo!==false) return true;
+  if(!emp.fechaBaja) return false;
+  // calcular inicio de la quincena
+  const [a,m,q]=key.split('-');
+  const ini=parseInt(q)===1?1:16;
+  const fechaIni=`${a}-${m}-${String(ini).padStart(2,'0')}`;
+  // si la baja es posterior al inicio de la quincena, el empleado estuvo presente
+  return emp.fechaBaja>=fechaIni;
+}
 function calcHDia(f){
   // Si tiene mañana y tarde: suma ambos turnos
   const hM=calcH(f.mE,f.mS), hT=calcH(f.tE,f.tS);
@@ -725,7 +735,10 @@ function cambiarCategoria(id){
 
 function toggleActivo(id){
   const emp=S.empleados.find(e=>e.id==id); if(!emp)return;
-  emp.activo=!emp.activo; save();renderEmps();cerrarModal();
+  emp.activo=!emp.activo;
+  if(!emp.activo) emp.fechaBaja=new Date().toISOString().slice(0,10);
+  else delete emp.fechaBaja;
+  save();renderEmps();cerrarModal();
 }
 
 function renderEmps(){
@@ -799,8 +812,8 @@ function renderFichaje(){
     if(e.activo===undefined||e.activo===null){e.activo=true;migrado=true;}
   });
   if(migrado) save();
-  const empsActivos=S.empleados.filter(e=>e.activo!==false);
-  if(!empsActivos.length)return alert('No hay empleados activos. Revisá el legajo de cada uno.');
+  const empsActivos=S.empleados.filter(e=>empActivoEnQuincena(e,key));
+  if(!empsActivos.length)return alert('No hay empleados activos para este período.');
   const key=periodoKey(a,m,q);
   const dias=diasPeriodo(a,m,q);
   if(!S.fichajes[key])S.fichajes[key]={};
@@ -966,7 +979,7 @@ function toggleFeriado(key,fecha){
   if(!S.feriados) S.feriados={};
   if(S.feriados[fecha]) delete S.feriados[fecha];
   else S.feriados[fecha]=true;
-  const empsActivos=S.empleados.filter(e=>e.activo!==false);
+  const empsActivos=S.empleados.filter(e=>empActivoEnQuincena(e,key));
   const filasEl=document.getElementById('filas_'+fecha);
   const cerrada=!!S.quincenasCerradas[key];
   if(filasEl) filasEl.innerHTML=empsActivos.map(e=>buildFilaEmp(key,fecha,e,cerrada)).join('');
@@ -1002,8 +1015,8 @@ function renderQuincena(){
   const a=document.getElementById('q-anio').value,m=document.getElementById('q-mes').value,q=document.getElementById('q-quincena').value;
   const key=periodoKey(a,m,q),dias=diasPeriodo(a,m,q);
   const cont=document.getElementById('quincena-container');
-  const emps=S.empleados.filter(e=>e.activo!==false);
-  if(!emps.length){cont.innerHTML='<div class="empty"><span>👥</span>Sin empleados activos.</div>';return;}
+  const emps=S.empleados.filter(e=>empActivoEnQuincena(e,key));
+  if(!emps.length){cont.innerHTML='<div class="empty"><span>👥</span>Sin empleados para este período.</div>';return;}
   let html=`<div style="font-weight:700;font-size:.93rem;color:var(--accent);margin-bottom:12px">${q}ª quincena — ${MESES[parseInt(m)-1]} ${a} <span style="font-size:.78rem;font-weight:400;color:var(--muted)">(${dias.length} días)</span></div>`;
   emps.forEach(e=>{
     const fichs=(S.fichajes[key]||{})[e.id]||{};let totalH=0,rows='';
@@ -1053,8 +1066,8 @@ function renderLiquidacion(){
   const a=document.getElementById('l-anio').value,m=document.getElementById('l-mes').value,q=document.getElementById('l-quincena').value;
   const key=periodoKey(a,m,q),hsNorm=S.config.hsNorm;
   const cont=document.getElementById('liquidacion-container');
-  const emps=S.empleados.filter(e=>e.activo!==false);
-  if(!emps.length){cont.innerHTML='<div class="empty"><span>👥</span>Sin empleados activos.</div>';return;}
+  const emps=S.empleados.filter(e=>empActivoEnQuincena(e,key));
+  if(!emps.length){cont.innerHTML='<div class="empty"><span>👥</span>Sin empleados para este período.</div>';return;}
   if(!S.pagos[key])S.pagos[key]={};
   const cerrada=S.quincenasCerradas[key];
 
@@ -1309,7 +1322,7 @@ function renderPlanilla(){
   const a=document.getElementById('pl-anio').value,m=document.getElementById('pl-mes').value;
   const q=document.getElementById('pl-quincena').value,formato=document.getElementById('pl-formato').value;
   const key=periodoKey(a,m,q),dias=diasPeriodo(a,m,q);
-  const emps=S.empleados.filter(e=>e.activo!==false);
+  const emps=S.empleados.filter(e=>empActivoEnQuincena(e,key));
   const cont=document.getElementById('planilla-container');
   if(!emps.length){cont.innerHTML='<div class="empty"><span>👥</span>Sin empleados.</div>';return;}
   const titulo=`${q}ª quincena — ${MESES[parseInt(m)-1]} ${a}`;

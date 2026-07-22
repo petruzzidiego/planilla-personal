@@ -812,9 +812,9 @@ function renderFichaje(){
     if(e.activo===undefined||e.activo===null){e.activo=true;migrado=true;}
   });
   if(migrado) save();
+  const key=periodoKey(a,m,q);
   const empsActivos=S.empleados.filter(e=>empActivoEnQuincena(e,key));
   if(!empsActivos.length)return alert('No hay empleados activos para este período.');
-  const key=periodoKey(a,m,q);
   const dias=diasPeriodo(a,m,q);
   if(!S.fichajes[key])S.fichajes[key]={};
   const cerrada=S.quincenasCerradas[key];
